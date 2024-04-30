@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Solver.Test", "Solver.Test\Solver.Test.csproj", "{0B4236A3-6234-42F0-85A0-2967F38DEFF7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Solver.Lib", "Solver.Lib\Solver.Lib.csproj", "{F9170E60-EC25-48DC-9796-6992349109CB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0B4236A3-6234-42F0-85A0-2967F38DEFF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B4236A3-6234-42F0-85A0-2967F38DEFF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B4236A3-6234-42F0-85A0-2967F38DEFF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B4236A3-6234-42F0-85A0-2967F38DEFF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9170E60-EC25-48DC-9796-6992349109CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9170E60-EC25-48DC-9796-6992349109CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9170E60-EC25-48DC-9796-6992349109CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9170E60-EC25-48DC-9796-6992349109CB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
