@@ -284,22 +284,22 @@ public class SudokuTests
         }
     }
 
-    private static IExpression[,] Sum<T>(T[,,] expressions, int dimension) where T : IExpression
+    private static Expression[,] Sum<T>(T[,,] expressions, int dimension) where T : Expression
     {
         var countI = expressions.GetLength(0);
         var countJ = expressions.GetLength(1);
         var countK = expressions.GetLength(2);
 
-        IExpression[,] result;
+        Expression[,] result;
 
         switch (dimension)
         {
             case 0:
-                result = new IExpression[countJ, countK];
+                result = new Expression[countJ, countK];
                 for (int j = 0; j < countJ; j++)
                 for (int k = 0; k < countK; k++)
                 {
-                    var parts = new IExpression[countI];
+                    var parts = new Expression[countI];
                     for (int i = 0; i < countI; i++)
                         parts[i] = expressions[i, j, k];
 
@@ -308,11 +308,11 @@ public class SudokuTests
 
                 return result;
             case 1:
-                result = new IExpression[countI, countK];
+                result = new Expression[countI, countK];
                 for (int i = 0; i < countI; i++)
                 for (int k = 0; k < countK; k++)
                 {
-                    var parts = new IExpression[countJ];
+                    var parts = new Expression[countJ];
                     for (int j = 0; j < countJ; j++)
                         parts[j] = expressions[i, j, k];
 
@@ -321,11 +321,11 @@ public class SudokuTests
 
                 return result;
             case 2:
-                result = new IExpression[countI, countJ];
+                result = new Expression[countI, countJ];
                 for (int i = 0; i < countI; i++)
                 for (int j = 0; j < countJ; j++)
                 {
-                    var parts = new IExpression[countK];
+                    var parts = new Expression[countK];
                     for (int k = 0; k < countK; k++)
                         parts[k] = expressions[i, j, k];
 
@@ -338,17 +338,17 @@ public class SudokuTests
         }
     }
 
-    private static IExpression[,] SumBlocks<T>(T[,,] expressions, int size) where T : IExpression
+    private static Expression[,] SumBlocks<T>(T[,,] expressions, int size) where T : Expression
     {
         var countK = size * size;
 
-        var result = new IExpression[size * size, countK];
+        var result = new Expression[size * size, countK];
 
         for (int bi = 0; bi < size; bi++)
         for (int bj = 0; bj < size; bj++)
         for (int k = 0; k < countK; k++)
         {
-            var parts = new IExpression[countK];
+            var parts = new Expression[countK];
             for (int i = 0; i < size; i++)
             for (int j = 0; j < size; j++)
                 parts[i * size + j] = expressions[bi * size + i, bj * size + j, k];

@@ -1,6 +1,6 @@
 namespace Solver.Lib;
 
-public class ConstantVariable(int value) : Variable, IExpression
+public class ConstantVariable(int value) : Variable
 {
     public int Value { get; } = value;
 
@@ -26,6 +26,13 @@ public class ConstantVariable(int value) : Variable, IExpression
             : null;
     }
 
+    public override Variable? TryExclude(int value)
+    {
+        return Value != value
+            ? this
+            : null;
+    }
+
     public override RestrictResult RestrictToMin(int minValue, Dictionary<Variable, Variable> variables)
     {
         return minValue <= Value
@@ -38,6 +45,13 @@ public class ConstantVariable(int value) : Variable, IExpression
         return Value <= maxValue
             ? RestrictResult.NoChange
             : RestrictResult.Infeasible;
+    }
+
+    public override RestrictResult Exclude(int value, Dictionary<Variable, Variable> variables)
+    {
+        return value == Value
+            ? RestrictResult.Infeasible
+            : RestrictResult.NoChange;
     }
 
     public override IEnumerable<Variable> GetVariables() => Enumerable.Empty<Variable>();

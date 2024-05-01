@@ -17,8 +17,8 @@ public enum Comparison
     /// </summary>
     Equals,
     
-    // /// <summary>
-    // /// Not equals.
-    // /// </summary>
-    // NotEquals,
+    /// <summary>
+    /// Not equals.
+    /// </summary>
+    NotEquals,
 }

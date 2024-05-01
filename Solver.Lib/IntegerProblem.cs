@@ -56,19 +56,24 @@ public class IntegerProblem
         return result;
     }
 
-    public Constraint AddConstraint(IExpression left, Comparison comparison, IExpression right)
+    public Constraint AddConstraint(Expression left, Comparison comparison, Expression right)
     {
         var c = new Constraint(left, comparison, right);
         _constraints.Add(c);
         return c;
     }
 
-    public Constraint AddConstraint(IExpression left, Comparison comparison, int right)
+    public Constraint AddConstraint(Expression left, Comparison comparison, int right)
     {
         return AddConstraint(left, comparison, new ConstantVariable(right));
     }
 
-    public Constraint[] AddConstraints(IExpression[] left, Comparison comparison, int right)
+    public void AddConstraint(Constraint constraint)
+    {
+        _constraints.Add(constraint);
+    }
+
+    public Constraint[] AddConstraints(Expression[] left, Comparison comparison, int right)
     {
         var result = new Constraint[left.Length];
         for (int i = 0; i < left.Length; i++)
@@ -79,7 +84,7 @@ public class IntegerProblem
         return result;
     }
 
-    public Constraint[,] AddConstraints(IExpression[,] left, Comparison comparison, int right)
+    public Constraint[,] AddConstraints(Expression[,] left, Comparison comparison, int right)
     {
         var countI = left.GetLength(0);
         var countJ = left.GetLength(1);
@@ -146,8 +151,7 @@ public class IntegerProblem
         if (worstConstraint == null)
             throw new InvalidOperationException("There is no worst constraint?");
 
-        var variables = worstConstraint.GetVariables();
-        foreach (var variable in variables)
+        foreach (var variable in worstConstraint.GetVariables())
         {
             var value = _variables[variable];
             if (value is ConstantVariable)
@@ -165,6 +169,8 @@ public class IntegerProblem
                     return true;
                 }
             }
+
+            return false;
         }
 
         return false;

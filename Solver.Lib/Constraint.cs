@@ -2,11 +2,11 @@ namespace Solver.Lib;
 
 public class Constraint
 {
-    public IExpression Left { get; }
+    public Expression Left { get; }
     public Comparison Comparison { get; }
-    public IExpression Right { get; }
+    public Expression Right { get; }
 
-    public Constraint(IExpression left, Comparison comparison, IExpression right)
+    public Constraint(Expression left, Comparison comparison, Expression right)
     {
         Left = left;
         Comparison = comparison;
@@ -25,6 +25,22 @@ public class Constraint
                 return Combine(
                     RestrictLessThan(variables),
                     RestrictGreaterThan(variables));
+            case Comparison.NotEquals:
+                var rightMin = Right.GetMin(variables);
+                var rightMax = Right.GetMax(variables);
+                if (rightMin == rightMax)
+                {
+                    return Left.Exclude(rightMin, variables);
+                }
+                
+                var leftMin = Left.GetMin(variables);
+                var leftMax = Left.GetMax(variables);
+                if (leftMin == leftMax)
+                {
+                    return Right.Exclude(leftMin, variables);
+                }
+
+                return RestrictResult.NoChange;
             default:
                 throw new ArgumentOutOfRangeException();
         }

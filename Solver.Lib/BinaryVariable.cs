@@ -15,9 +15,9 @@ public class BinaryVariable : Variable
     {
         var oldVal = variables[this];
         var newVal = oldVal.TryRestrictToMin(minValue);
-        if (newVal == null)
+        if (ReferenceEquals(newVal, null))
             return RestrictResult.Infeasible;
-        if (newVal == oldVal)
+        if (ReferenceEquals(newVal, oldVal))
             return RestrictResult.NoChange;
 
         variables[this] = newVal;
@@ -28,15 +28,28 @@ public class BinaryVariable : Variable
     {
         var oldVal = variables[this];
         var newVal = oldVal.TryRestrictToMax(maxValue);
-        if (newVal == null)
+        if (ReferenceEquals(newVal, null))
             return RestrictResult.Infeasible;
-        if (newVal == oldVal)
+        if (ReferenceEquals(newVal, oldVal))
             return RestrictResult.NoChange;
 
         variables[this] = newVal;
         return RestrictResult.Change;
     }
-    
+
+    public override RestrictResult Exclude(int value, Dictionary<Variable, Variable> variables)
+    {
+        var oldVal = variables[this];
+        var newVal = oldVal.TryExclude(value);
+        if (ReferenceEquals(newVal, null))
+            return RestrictResult.Infeasible;
+        if (ReferenceEquals(newVal, oldVal))
+            return RestrictResult.NoChange;
+
+        variables[this] = newVal;
+        return RestrictResult.Change;
+    }
+
     public override Variable? TryRestrictToMin(int minValue)
     {
         if (minValue <= 0)
@@ -55,6 +68,16 @@ public class BinaryVariable : Variable
             return new ConstantVariable(0);
         
         return null;
+    }
+
+    public override Variable TryExclude(int value)
+    {
+        return value switch
+        {
+            0 => new ConstantVariable(1),
+            1 => new ConstantVariable(0),
+            _ => this
+        };
     }
 
     public override string ToString()
