@@ -29,6 +29,27 @@ public sealed class SumExpression : Expression
         }
     }
 
+    public override SumExpression Add(int addition)
+    {
+        for (int i = 0; i < _elements.Length; i++)
+        {
+            if (_elements[i] is ConstantVariable ce)
+            {
+                var elements = new Expression[_elements.Length];
+                Array.Copy(_elements, elements, _elements.Length);
+                elements[i] = new ConstantVariable(ce.Value + addition);
+                return new SumExpression(elements);
+            }
+        }
+
+        {
+            var elements = new Expression[_elements.Length + 1];
+            Array.Copy(_elements, elements, _elements.Length);
+            elements[_elements.Length] = new ConstantVariable(addition);
+            return new SumExpression(elements);
+        }
+    }
+
     public override int GetMin(Dictionary<Variable, Variable> variables) => _elements.Sum(e => e.GetMin(variables));
 
     public override int GetMax(Dictionary<Variable, Variable> variables) => _elements.Sum(e => e.GetMax(variables));

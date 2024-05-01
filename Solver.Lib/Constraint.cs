@@ -17,9 +17,9 @@ public class Constraint
     {
         switch (Comparison)
         {
-            case Comparison.LessThan:
+            case Comparison.LessEqual:
                 return RestrictLessThan(variables);
-            case Comparison.GreaterThan:
+            case Comparison.GreaterEqual:
                 return RestrictGreaterThan(variables);
             case Comparison.Equals:
                 return Combine(
@@ -81,9 +81,9 @@ public class Constraint
     {
         switch (Comparison)
         {
-            case Comparison.LessThan:
+            case Comparison.LessEqual:
                 return Left.GetMax(variables) - Right.GetMin(variables);
-            case Comparison.GreaterThan:
+            case Comparison.GreaterEqual:
                 return Right.GetMax(variables) - Left.GetMin(variables);
             case Comparison.Equals:
                 return (Left.GetMax(variables) - Left.GetMin(variables))

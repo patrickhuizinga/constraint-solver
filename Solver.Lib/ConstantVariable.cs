@@ -2,6 +2,11 @@ namespace Solver.Lib;
 
 public class ConstantVariable(int value) : Variable
 {
+    public override Expression Add(int addition)
+    {
+        return new ConstantVariable(Value + addition);
+    }
+
     public int Value { get; } = value;
 
     public override int Min => Value;

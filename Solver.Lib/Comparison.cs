@@ -5,12 +5,12 @@ public enum Comparison
     /// <summary>
     /// Less than or equal.
     /// </summary>
-    LessThan,
+    LessEqual,
     
     /// <summary>
     /// Greater than or equal.
     /// </summary>
-    GreaterThan,
+    GreaterEqual,
     
     /// <summary>
     /// Exactly equal.
