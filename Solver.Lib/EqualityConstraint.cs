@@ -13,7 +13,7 @@ public class EqualityConstraint : IConstraint
         Right = right;
     }
 
-    public RestrictResult Restrict(Dictionary<Variable,Variable> variables)
+    public RestrictResult Restrict(List<VariableType> variables)
     {
         switch (Comparison)
         {
@@ -46,7 +46,7 @@ public class EqualityConstraint : IConstraint
         }
     }
 
-    private RestrictResult RestrictLessThan(Dictionary<Variable, Variable> variables)
+    private RestrictResult RestrictLessThan(List<VariableType> variables)
     {
         var rightMax = Right.GetMax(variables);
         var leftResult = Left.RestrictToMax(rightMax, variables);
@@ -56,7 +56,7 @@ public class EqualityConstraint : IConstraint
         return Combine(leftResult, rightResult);
     }
 
-    private RestrictResult RestrictGreaterThan(Dictionary<Variable, Variable> variables)
+    private RestrictResult RestrictGreaterThan(List<VariableType> variables)
     {
         var rightMin = Right.GetMin(variables);
         var leftResult = Left.RestrictToMin(rightMin, variables);
@@ -77,7 +77,7 @@ public class EqualityConstraint : IConstraint
         return RestrictResult.NoChange;
     }
 
-    public int Range(Dictionary<Variable, Variable> variables)
+    public int Range(List<VariableType> variables)
     {
         switch (Comparison)
         {
@@ -93,11 +93,11 @@ public class EqualityConstraint : IConstraint
         }
     }
 
-    public IEnumerable<Variable> GetVariables()
+    public IEnumerable<int> GetVariableIndices()
     {
-        foreach (var variable in Left.GetVariables())
+        foreach (var variable in Left.GetVariableIndices())
             yield return variable;
-        foreach (var variable in Right.GetVariables())
+        foreach (var variable in Right.GetVariableIndices())
             yield return variable;
     }
 }

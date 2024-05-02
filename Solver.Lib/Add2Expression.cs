@@ -25,7 +25,7 @@ public sealed class Add2Expression : Expression
                 return SumExpression.Create(elements);
             case Add2Expression add:
                 return SumExpression.Create(First, Second, add.First, add.Second);
-            case ConstantVariable cv:
+            case ConstantExpression cv:
                 return Add(cv.Value);
             default:
                 return SumExpression.Create(First, Second, addition);
@@ -34,26 +34,26 @@ public sealed class Add2Expression : Expression
 
     public override Expression Add(int addition)
     {
-        if (First is ConstantVariable cv1)
+        if (First is ConstantExpression cv1)
         {
-            return new Add2Expression(new ConstantVariable(cv1.Value + addition), Second);
+            return new Add2Expression(new ConstantExpression(cv1.Value + addition), Second);
         }
 
-        if (Second is ConstantVariable cv2)
+        if (Second is ConstantExpression cv2)
         {
-            return new Add2Expression(First, new ConstantVariable(cv2.Value + addition));
+            return new Add2Expression(First, new ConstantExpression(cv2.Value + addition));
         }
 
         return SumExpression.Create(First, Second, addition);
     }
 
-    public override int GetMin(Dictionary<Variable, Variable> variables) =>
+    public override int GetMin(List<VariableType> variables) =>
         First.GetMin(variables) + Second.GetMin(variables);
 
-    public override int GetMax(Dictionary<Variable, Variable> variables) =>
+    public override int GetMax(List<VariableType> variables) =>
         First.GetMax(variables) + Second.GetMax(variables);
 
-    public override RestrictResult RestrictToMin(int minValue, Dictionary<Variable, Variable> variables)
+    public override RestrictResult RestrictToMin(int minValue, List<VariableType> variables)
     {
         int firstMax = First.GetMax(variables);
         int secondMax = Second.GetMax(variables);
@@ -83,7 +83,7 @@ public sealed class Add2Expression : Expression
         return firstResult == RestrictResult.NoChange ? secondResult : firstResult;
     }
 
-    public override RestrictResult RestrictToMax(int maxValue, Dictionary<Variable, Variable> variables)
+    public override RestrictResult RestrictToMax(int maxValue, List<VariableType> variables)
     {
         int firstMin = First.GetMin(variables);
         int secondMin = Second.GetMin(variables);
@@ -113,7 +113,7 @@ public sealed class Add2Expression : Expression
         return firstResult == RestrictResult.NoChange ? secondResult : firstResult;
     }
 
-    public override RestrictResult Exclude(int value, Dictionary<Variable, Variable> variables)
+    public override RestrictResult Exclude(int value, List<VariableType> variables)
     {
         int firstMin = First.GetMin(variables);
         int secondMin = Second.GetMin(variables);
@@ -181,10 +181,10 @@ public sealed class Add2Expression : Expression
         return RestrictResult.NoChange;
     }
 
-    public override IEnumerable<Variable> GetVariables()
+    public override IEnumerable<int> GetVariableIndices()
     {
         return Enumerable.Concat(
-            First.GetVariables(),
-            Second.GetVariables());
+            First.GetVariableIndices(),
+            Second.GetVariableIndices());
     }
 }

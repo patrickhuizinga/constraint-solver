@@ -2,32 +2,33 @@ namespace Solver.Lib;
 
 public class IntegerProblem
 {
-    private readonly Dictionary<Variable, Variable> _variables = new();
+    private readonly List<VariableType> _variables = [];
     private readonly List<IConstraint> _constraints = [];
 
-    public Variable this[Variable variable]
+    public VariableType this[Variable variable]
     {
-        get => _variables[variable];
-        set => _variables[variable] = value;
+        get => _variables[variable.Index];
+        set => _variables[variable.Index] = value;
     }
 
-    public bool IsSolved => _variables.Values.All(value => value is ConstantVariable);
+    public bool IsSolved => _variables.All(value => value is ConstantType);
 
-    public TVariable AddVariable<TVariable>(TVariable variable) where TVariable : Variable
+    public Variable AddVariable(VariableType variable)
     {
-        _variables.Add(variable, variable);
-        return variable;
+        var index = _variables.Count;
+        _variables.Add(variable);
+        return new Variable(index);
     }
 
-    public BinaryVariable AddBinaryVariable()
+    public Variable AddBinaryVariable()
     {
         return AddVariable(
-            new BinaryVariable());
+            new BinaryType());
     }
 
-    public BinaryVariable[] AddBinaryVariables(int count)
+    public Variable[] AddBinaryVariables(int count)
     {
-        var result = new BinaryVariable[count];
+        var result = new Variable[count];
         for (int i = 0; i < count; i++)
         {
             result[i] = AddBinaryVariable();
@@ -36,9 +37,9 @@ public class IntegerProblem
         return result;
     }
 
-    public BinaryVariable[,] AddBinaryVariables(int countI, int countJ)
+    public Variable[,] AddBinaryVariables(int countI, int countJ)
     {
-        var result = new BinaryVariable[countI, countJ];
+        var result = new Variable[countI, countJ];
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
@@ -48,9 +49,9 @@ public class IntegerProblem
         return result;
     }
 
-    public BinaryVariable[,,] AddBinaryVariables(int countI, int countJ, int countK)
+    public Variable[,,] AddBinaryVariables(int countI, int countJ, int countK)
     {
-        var result = new BinaryVariable[countI, countJ, countK];
+        var result = new Variable[countI, countJ, countK];
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         for (int k = 0; k < countK; k++)
@@ -66,7 +67,7 @@ public class IntegerProblem
         var min = range.Start.Value;
         var max = range.End.Value;
 
-        return AddVariable(RangeVariable.Create(min, max));
+        return AddVariable(RangeType.Create(min, max));
     }
 
     public Variable[] AddRangeVariables(Range range, int count)
@@ -77,7 +78,7 @@ public class IntegerProblem
         var result = new Variable[count];
 
         for (int i = 0; i < count; i++)
-            result[i] = AddVariable(RangeVariable.Create(min, max));
+            result[i] = AddVariable(RangeType.Create(min, max));
 
         return result;
     }
@@ -91,7 +92,7 @@ public class IntegerProblem
 
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
-            result[i, j] = AddVariable(RangeVariable.Create(min, max));
+            result[i, j] = AddVariable(RangeType.Create(min, max));
 
         return result;
     }
@@ -208,21 +209,21 @@ public class IntegerProblem
         if (worstConstraint == null)
             throw new InvalidOperationException("There is no worst constraint?");
 
-        foreach (var variable in worstConstraint.GetVariables())
+        foreach (var varIndex in worstConstraint.GetVariableIndices())
         {
-            var value = _variables[variable];
-            if (value is ConstantVariable)
+            var value = _variables[varIndex];
+            if (value is ConstantType)
                 continue;
 
             for (int i = value.Min; i <= value.Max; i++)
             {
                 var clone = Clone();
-                clone[variable] = i;
+                clone._variables[varIndex] = i;
 
                 if (clone.FindFeasible())
                 {
-                    foreach (var pair in clone._variables)
-                        _variables[pair.Key] = pair.Value;
+                    _variables.Clear();
+                    _variables.AddRange(clone._variables);
                     return true;
                 }
             }
@@ -254,8 +255,7 @@ public class IntegerProblem
     {
         var result = new IntegerProblem();
         result._constraints.AddRange(_constraints);
-        foreach (var pair in _variables)
-            result._variables[pair.Key] = pair.Value;
+        result._variables.AddRange(_variables);
 
         return result;
     }

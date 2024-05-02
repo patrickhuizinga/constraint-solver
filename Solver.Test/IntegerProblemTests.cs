@@ -13,8 +13,6 @@ public class IntegerProblemTests
         var sum = SumExpression.Create(bin1, bin2);
         problem.AddConstraint(sum, Comparison.Equals, 1);
 
-        var x = new DistinctConstraint(bin1, bin2) { DefaultValue = 0 };
-
         var result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
 
@@ -22,7 +20,7 @@ public class IntegerProblemTests
         var res2 = problem[bin2];
         Console.WriteLine(res1 + " , " + res2);
 
-        problem[bin1] = new ConstantVariable(1);
+        problem[bin1] = new ConstantType(1);
         result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
 

@@ -35,7 +35,7 @@ public sealed class SumExpression : Expression
     {
         return elements.Length switch
         {
-            0 => new ConstantVariable(0),
+            0 => new ConstantExpression(0),
             1 => elements[0],
             2 => new Add2Expression(elements[0], elements[1]),
             _ => new SumExpression(elements)
@@ -73,11 +73,11 @@ public sealed class SumExpression : Expression
     {
         for (int i = 0; i < Elements.Length; i++)
         {
-            if (Elements[i] is ConstantVariable ce)
+            if (Elements[i] is ConstantExpression ce)
             {
                 var elements = new Expression[Elements.Length];
                 Array.Copy(Elements, elements, Elements.Length);
-                elements[i] = new ConstantVariable(ce.Value + addition);
+                elements[i] = new ConstantExpression(ce.Value + addition);
                 return new SumExpression(elements);
             }
         }
@@ -85,16 +85,16 @@ public sealed class SumExpression : Expression
         {
             var elements = new Expression[Elements.Length + 1];
             Array.Copy(Elements, elements, Elements.Length);
-            elements[Elements.Length] = new ConstantVariable(addition);
+            elements[Elements.Length] = new ConstantExpression(addition);
             return new SumExpression(elements);
         }
     }
 
-    public override int GetMin(Dictionary<Variable, Variable> variables) => Elements.Sum(e => e.GetMin(variables));
+    public override int GetMin(List<VariableType> variables) => Elements.Sum(e => e.GetMin(variables));
 
-    public override int GetMax(Dictionary<Variable, Variable> variables) => Elements.Sum(e => e.GetMax(variables));
+    public override int GetMax(List<VariableType> variables) => Elements.Sum(e => e.GetMax(variables));
     
-    public override RestrictResult RestrictToMin(int minValue, Dictionary<Variable, Variable> variables)
+    public override RestrictResult RestrictToMin(int minValue, List<VariableType> variables)
     {
         var maxValues = new int[Elements.Length];
         int maxSum = 0;
@@ -127,7 +127,7 @@ public sealed class SumExpression : Expression
         return result;
     }
 
-    public override RestrictResult RestrictToMax(int maxValue, Dictionary<Variable, Variable> variables)
+    public override RestrictResult RestrictToMax(int maxValue, List<VariableType> variables)
     {
         var minValues = new int[Elements.Length];
         int minSum = 0;
@@ -160,7 +160,7 @@ public sealed class SumExpression : Expression
         return result;
     }
 
-    public override RestrictResult Exclude(int value, Dictionary<Variable, Variable> variables)
+    public override RestrictResult Exclude(int value, List<VariableType> variables)
     {
         var minValues = new int[Elements.Length];
         var maxValues = new int[Elements.Length];
@@ -240,8 +240,8 @@ public sealed class SumExpression : Expression
         return RestrictResult.NoChange;
     }
 
-    public override IEnumerable<Variable> GetVariables()
+    public override IEnumerable<int> GetVariableIndices()
     {
-        return Elements.SelectMany(e => e.GetVariables());
+        return Elements.SelectMany(e => e.GetVariableIndices());
     }
 }

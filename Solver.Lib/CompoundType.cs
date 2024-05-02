@@ -1,17 +1,17 @@
 namespace Solver.Lib;
 
-public class CompoundVariable : Variable
+public class CompoundType : VariableType
 {
-    private readonly List<Variable> _variables;
+    private readonly List<VariableType> _variables;
 
-    private CompoundVariable(List<Variable> variables)
+    private CompoundType(List<VariableType> variables)
     {
         _variables = variables;
         Min = _variables.Min(v => v.Min);
         Max = _variables.Max(v => v.Max);
     }
 
-    public static Variable Create(params Variable[] variables)
+    public static VariableType Create(params VariableType[] variables)
     {
         var list = variables
             .SelectMany(Decompose)
@@ -21,7 +21,7 @@ public class CompoundVariable : Variable
         if (list.Count == 1)
             return list[0];
 
-        var result = new List<Variable>();
+        var result = new List<VariableType>();
         foreach (var variable in list)
         {
             if (result.Count == 0)
@@ -34,7 +34,7 @@ public class CompoundVariable : Variable
             if (last.Max >= variable.Max) continue;
 
             if (last.Max + 1 >= variable.Min)
-                result[^1] = RangeVariable.Create(last.Min, variable.Max);
+                result[^1] = RangeType.Create(last.Min, variable.Max);
             else
                 result.Add(variable);
         }
@@ -42,13 +42,13 @@ public class CompoundVariable : Variable
         if (result.Count == 1)
             return result[0];
 
-        return new CompoundVariable(result);
+        return new CompoundType(result);
     }
 
-    private static IEnumerable<Variable> Decompose(Variable variable)
+    private static IEnumerable<VariableType> Decompose(VariableType variable)
     {
-        if (variable is CompoundVariable cv)
-            return cv._variables;
+        if (variable is CompoundType compound)
+            return compound._variables;
 
         return [variable];
     }
@@ -57,16 +57,12 @@ public class CompoundVariable : Variable
 
     public override int Max { get; }
 
-    public override int GetMin(Dictionary<Variable, Variable> variables) => variables[this].Min;
-
-    public override int GetMax(Dictionary<Variable, Variable> variables) => variables[this].Max;
-
-    public override Variable? TryRestrictToMin(int minValue)
+    public override VariableType? TryRestrictToMin(int minValue)
     {
         if (minValue <= Min)
             return this;
         if (minValue == Max)
-            return new ConstantVariable(minValue);
+            return new ConstantType(minValue);
         if (Max < minValue)
             return null;
 
@@ -80,7 +76,7 @@ public class CompoundVariable : Variable
                 if (i == _variables.Count - 1)
                     return variable;
 
-                return new CompoundVariable(_variables[i..^1] );
+                return new CompoundType(_variables[i..^1] );
             }
             
             // variable.Min < minValue <= variable.Max
@@ -93,13 +89,13 @@ public class CompoundVariable : Variable
             if (ReferenceEquals(newVariable, null) && i == _variables.Count - 2) 
                 return _variables[^1];
 
-            List<Variable> newVariables;
+            List<VariableType> newVariables;
             switch (newVariable)
             {
                 case null:
                     newVariables = _variables[(i+1)..^1];
                     break;
-                case CompoundVariable cv:
+                case CompoundType cv:
                     newVariables = _variables[(i+1)..^1];
                     newVariables.InsertRange(0, cv._variables);
                     break;
@@ -108,18 +104,18 @@ public class CompoundVariable : Variable
                     newVariables[0] = newVariable;
                     break;
             }
-            return new CompoundVariable(newVariables);
+            return new CompoundType(newVariables);
         }
 
         return null;
     }
 
-    public override Variable? TryRestrictToMax(int maxValue)
+    public override VariableType? TryRestrictToMax(int maxValue)
     {
         if (Max <= maxValue)
             return this;
         if (maxValue == Min)
-            return new ConstantVariable(maxValue);
+            return new ConstantType(maxValue);
         if (maxValue < Min)
             return null;
 
@@ -133,7 +129,7 @@ public class CompoundVariable : Variable
                 if (i == 1)
                     return _variables[0];
 
-                return new CompoundVariable(_variables[0..i] );
+                return new CompoundType(_variables[0..i] );
             }
             
             // variable.Min <= maxValue < variable.Max
@@ -146,13 +142,13 @@ public class CompoundVariable : Variable
             if (ReferenceEquals(newVariable, null) && i == 1) 
                 return _variables[0];
 
-            List<Variable> newVariables;
+            List<VariableType> newVariables;
             switch (newVariable)
             {
                 case null:
                     newVariables = _variables[0..(i-1)];
                     break;
-                case CompoundVariable cv:
+                case CompoundType cv:
                     newVariables = _variables[0..(i-1)];
                     newVariables.AddRange(cv._variables);
                     break;
@@ -161,13 +157,13 @@ public class CompoundVariable : Variable
                     newVariables[^1] = newVariable;
                     break;
             }
-            return new CompoundVariable(newVariables);
+            return new CompoundType(newVariables);
         }
 
         return null;
     }
 
-    public override Variable TryExclude(int value)
+    public override VariableType TryExclude(int value)
     {
         if (value < Min || Max < value)
             return this;
@@ -188,13 +184,13 @@ public class CompoundVariable : Variable
                 return _variables[1 - i];
             }
 
-            var newVariables = new List<Variable>(_variables);
+            var newVariables = new List<VariableType>(_variables);
             switch (newVariable)
             {
                 case null:
                     newVariables.RemoveAt(i);
                     break;
-                case CompoundVariable cv:
+                case CompoundType cv:
                     newVariables.RemoveAt(i);
                     newVariables.InsertRange(i, cv._variables);
                     break;
@@ -202,22 +198,10 @@ public class CompoundVariable : Variable
                     newVariables[i] = newVariable;
                     break;
             }
-            return new CompoundVariable(newVariables);
+            return new CompoundType(newVariables);
         }
 
         return this;
-    }
-
-    public override int ValueCount => _variables.Sum(v => v.ValueCount);
-
-    public override IEnumerable<int> GetValues()
-    {
-        return _variables.SelectMany(v => v.GetValues());
-    }
-
-    public override bool Contains(int value)
-    {
-        return _variables.Any(variable => variable.Contains(value));
     }
 
     public override string ToString()

@@ -8,14 +8,14 @@ public abstract class Expression :
     ISubtractionOperators<Expression, int, Expression>,
     IComparisonOperators<Expression, Expression, EqualityConstraint>
 {
-    public abstract int GetMin(Dictionary<Variable, Variable> variables);
-    public abstract int GetMax(Dictionary<Variable, Variable> variables);
-    public abstract RestrictResult RestrictToMin(int minValue, Dictionary<Variable, Variable> variables);
-    public abstract RestrictResult RestrictToMax(int maxValue, Dictionary<Variable, Variable> variables);
+    public abstract int GetMin(List<VariableType> variables);
+    public abstract int GetMax(List<VariableType> variables);
+    public abstract RestrictResult RestrictToMin(int minValue, List<VariableType> variables);
+    public abstract RestrictResult RestrictToMax(int maxValue, List<VariableType> variables);
 
-    public abstract RestrictResult Exclude(int value, Dictionary<Variable, Variable> variables);
+    public abstract RestrictResult Exclude(int value, List<VariableType> variables);
 
-    public abstract IEnumerable<Variable> GetVariables();
+    public abstract IEnumerable<int> GetVariableIndices();
 
     public static Expression operator +(Expression left, Expression right)
     {
@@ -44,7 +44,7 @@ public abstract class Expression :
 
     public virtual Expression Add(int addition)
     {
-        return new Add2Expression(this, new ConstantVariable(addition));
+        return new Add2Expression(this, new ConstantExpression(addition));
     }
 
     public static EqualityConstraint operator <=(Expression left, Expression right)
@@ -59,10 +59,10 @@ public abstract class Expression :
 
     public static EqualityConstraint operator <(Expression left, Expression right)
     {
-        if (right is ConstantVariable cr)
-            right = cr.Add(-1);
-        else if (left is ConstantVariable cl)
-            left = cl.Add(1);
+        if (right is ConstantExpression cr)
+            right = cr - 1;
+        else if (left is ConstantExpression cl)
+            left = cl + 1;
         else if (right is SumExpression se)
             right = se.Add(-1);
         else
@@ -73,10 +73,10 @@ public abstract class Expression :
 
     public static EqualityConstraint operator >(Expression left, Expression right)
     {
-        if (right is ConstantVariable cr)
-            right = cr.Add(1);
-        else if (left is ConstantVariable cl)
-            left = cl.Add(-1);
+        if (right is ConstantExpression cr)
+            right = cr + 1;
+        else if (left is ConstantExpression cl)
+            left = cl - 1;
         else if (right is SumExpression se)
             right = se.Add(1);
         else
@@ -97,6 +97,6 @@ public abstract class Expression :
 
     public static implicit operator Expression(int value)
     {
-        return new ConstantVariable(value);
+        return new ConstantExpression(value);
     }
 }

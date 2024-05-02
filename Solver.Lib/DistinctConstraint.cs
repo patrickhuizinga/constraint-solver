@@ -2,7 +2,7 @@ namespace Solver.Lib;
 
 public class DistinctConstraint : IConstraint
 {
-    private readonly Variable[] _variables;
+    private readonly int[] _variableIndices;
     
     /// <summary>
     /// If this value is not-null, then it represents the value multiple variables may have at the same time.
@@ -12,25 +12,28 @@ public class DistinctConstraint : IConstraint
 
     public DistinctConstraint(params Variable[] variables)
     {
-        _variables = variables;
+        _variableIndices = new int[variables.Length];
+        for (int i = 0; i < variables.Length; i++)
+        {
+            _variableIndices[i] = variables[i].Index;
+        }
     }
     
-    public RestrictResult Restrict(Dictionary<Variable, Variable> variables)
+    public RestrictResult Restrict(List<VariableType> variables)
     {
         var result = RestrictResult.NoChange;
         
-        for (var i = 0; i < _variables.Length; i++)
+        foreach (var i in _variableIndices)
         {
-            var variable = variables[_variables[i]];
-            if (variable is not ConstantVariable cv) continue;
+            if (variables[i] is not ConstantType cv) continue;
             
             if (cv.Value == DefaultValue) continue;
             
-            for (int j = 0; j < _variables.Length; j++)
+            foreach (var j in _variableIndices)
             {
                 if (i == j) continue;
 
-                var elResult = _variables[j].Exclude(cv.Value, variables);
+                var elResult = Variable.Exclude(j, cv.Value, variables);
                 if (elResult == RestrictResult.Infeasible)
                     return RestrictResult.Infeasible;
 
@@ -42,13 +45,13 @@ public class DistinctConstraint : IConstraint
         return result;
     }
 
-    public int Range(Dictionary<Variable, Variable> variables)
+    public int Range(List<VariableType> variables)
     {
-        return _variables.Sum(v => v.GetMax(variables) - v.GetMin(variables));
+        return _variableIndices.Sum(i => variables[i].Max - variables[i].Min);
     }
 
-    public IEnumerable<Variable> GetVariables()
+    public IEnumerable<int> GetVariableIndices()
     {
-        return _variables;
+        return _variableIndices;
     }
 }

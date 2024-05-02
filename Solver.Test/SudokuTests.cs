@@ -199,7 +199,7 @@ public class SudokuTests
         }
     }
 
-    private static void SetStart(IntegerProblem integerProblem, BinaryVariable[,,] variables, int[,] start)
+    private static void SetStart(IntegerProblem problem, Variable[,,] variables, int[,] start)
     {
         var countI = start.GetLength(0);
         var countJ = start.GetLength(1);
@@ -210,7 +210,7 @@ public class SudokuTests
                 continue;
             
             var k = start[i, j] - 1;
-            integerProblem[variables[i, j, k]] = 1;
+            problem[variables[i, j, k]] = 1;
         }
     }
 
@@ -269,7 +269,7 @@ public class SudokuTests
         }
     }
 
-    private static void SetOneColdStart(IntegerProblem integerProblem, BinaryVariable[,,] variables, int[,] start)
+    private static void SetOneColdStart(IntegerProblem integerProblem, Variable[,,] variables, int[,] start)
     {
         var countI = start.GetLength(0);
         var countJ = start.GetLength(1);
@@ -329,7 +329,7 @@ public class SudokuTests
         }
     }
 
-    private static void SetStart(IntegerProblem integerProblem, Variable[,] variables, int[,] start)
+    private static void SetStart(IntegerProblem problem, Variable[,] variables, int[,] start)
     {
         var countI = start.GetLength(0);
         var countJ = start.GetLength(1);
@@ -339,7 +339,7 @@ public class SudokuTests
             if (start[i, j] == 0)
                 continue;
             
-            integerProblem[variables[i, j]] = start[i, j];
+            problem[variables[i, j]] = start[i, j];
         }
     }
 
@@ -418,7 +418,7 @@ public class SudokuTests
         return result;
     }
 
-    private static DistinctConstraint[] Distinct<TVariable>(TVariable[,] expressions, int dimension) where TVariable : Variable
+    private static DistinctConstraint[] Distinct(Variable[,] expressions, int dimension)
     {
         var countI = expressions.GetLength(0);
         var countJ = expressions.GetLength(1);
@@ -456,7 +456,7 @@ public class SudokuTests
         }
     }
 
-    private static DistinctConstraint[,] Distinct<TVariable>(TVariable[,,] expressions, int dimension) where TVariable : Variable
+    private static DistinctConstraint[,] Distinct(Variable[,,] expressions, int dimension)
     {
         var countI = expressions.GetLength(0);
         var countJ = expressions.GetLength(1);
@@ -510,7 +510,7 @@ public class SudokuTests
         }
     }
 
-    private static DistinctConstraint[] DistinctBlocks<TVariable>(TVariable[,] expressions, int size) where TVariable : Variable
+    private static DistinctConstraint[] DistinctBlocks(Variable[,] expressions, int size)
     {
         var countK = size * size;
 
@@ -530,7 +530,7 @@ public class SudokuTests
         return result;
     }
 
-    private static DistinctConstraint[,] DistinctBlocks<TVariable>(TVariable[,,] expressions, int size) where TVariable : Variable
+    private static DistinctConstraint[,] DistinctBlocks(Variable[,,] expressions, int size)
     {
         var countK = size * size;
 
