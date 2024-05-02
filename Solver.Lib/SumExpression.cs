@@ -4,63 +4,103 @@ namespace Solver.Lib;
 
 public sealed class SumExpression : Expression
 {
-    private readonly Expression[] _elements;
+    internal readonly Expression[] Elements;
 
-    public SumExpression(params Expression[] elements)
+    private SumExpression(params Expression[] elements)
     {
-        _elements = elements;
+        Elements = elements;
+    }
+
+    public static Expression Create(Expression element)
+    {
+        return element;
+    }
+
+    public static Expression Create(Expression first, Expression second)
+    {
+        return new Add2Expression(first, second);
+    }
+
+    public static Expression Create(Expression first, Expression second, Expression third)
+    {
+        return new SumExpression(first, second, third);
+    }
+
+    public static Expression Create(Expression first, Expression second, Expression third, Expression fourth)
+    {
+        return new SumExpression(first, second, third, fourth);
+    }
+
+    public static Expression Create(params Expression[] elements)
+    {
+        return elements.Length switch
+        {
+            0 => new ConstantVariable(0),
+            1 => elements[0],
+            2 => new Add2Expression(elements[0], elements[1]),
+            _ => new SumExpression(elements)
+        };
     }
 
     public override SumExpression Add(Expression addition)
     {
         if (addition is SumExpression sum)
         {
-            var elements = new Expression[_elements.Length + sum._elements.Length];
-            Array.Copy(_elements, elements, _elements.Length);
-            Array.Copy(sum._elements, 0, elements, _elements.Length, sum._elements.Length);
+            var elements = new Expression[Elements.Length + sum.Elements.Length];
+            Array.Copy(Elements, elements, Elements.Length);
+            Array.Copy(sum.Elements, 0, elements, Elements.Length, sum.Elements.Length);
             return new SumExpression(elements);
+        }
+        else if (addition is Add2Expression add)
+        {
+            var elements = new Expression[Elements.Length + 2];
+            Array.Copy(Elements, elements, Elements.Length);
+            elements[^2] = add.First;
+            elements[^1] = add.Second;
+            return new SumExpression(elements);
+            
         }
         else
         {
-            var elements = new Expression[_elements.Length + 1];
-            Array.Copy(_elements, elements, _elements.Length);
-            elements[_elements.Length] = addition;
+            var elements = new Expression[Elements.Length + 1];
+            Array.Copy(Elements, elements, Elements.Length);
+            elements[Elements.Length] = addition;
             return new SumExpression(elements);
         }
     }
 
     public override SumExpression Add(int addition)
     {
-        for (int i = 0; i < _elements.Length; i++)
+        for (int i = 0; i < Elements.Length; i++)
         {
-            if (_elements[i] is ConstantVariable ce)
+            if (Elements[i] is ConstantVariable ce)
             {
-                var elements = new Expression[_elements.Length];
-                Array.Copy(_elements, elements, _elements.Length);
+                var elements = new Expression[Elements.Length];
+                Array.Copy(Elements, elements, Elements.Length);
                 elements[i] = new ConstantVariable(ce.Value + addition);
                 return new SumExpression(elements);
             }
         }
 
         {
-            var elements = new Expression[_elements.Length + 1];
-            Array.Copy(_elements, elements, _elements.Length);
-            elements[_elements.Length] = new ConstantVariable(addition);
+            var elements = new Expression[Elements.Length + 1];
+            Array.Copy(Elements, elements, Elements.Length);
+            elements[Elements.Length] = new ConstantVariable(addition);
             return new SumExpression(elements);
         }
     }
 
-    public override int GetMin(Dictionary<Variable, Variable> variables) => _elements.Sum(e => e.GetMin(variables));
+    public override int GetMin(Dictionary<Variable, Variable> variables) => Elements.Sum(e => e.GetMin(variables));
 
-    public override int GetMax(Dictionary<Variable, Variable> variables) => _elements.Sum(e => e.GetMax(variables));
+    public override int GetMax(Dictionary<Variable, Variable> variables) => Elements.Sum(e => e.GetMax(variables));
     
     public override RestrictResult RestrictToMin(int minValue, Dictionary<Variable, Variable> variables)
     {
-        var maxValues = new int[_elements.Length];
+        var maxValues = new int[Elements.Length];
         int maxSum = 0;
-        for (int i = 0; i < _elements.Length; i++)
+        for (int i = 0; i < Elements.Length; i++)
         {
-            maxValues[i] = _elements[i].GetMax(variables);
+            maxValues[i] = Elements[i].GetMax(variables);
             maxSum += maxValues[i];
         }
 
@@ -70,9 +110,9 @@ public sealed class SumExpression : Expression
         var diff = maxSum - minValue;
 
         var result = RestrictResult.NoChange;
-        for (int i = 0; i < _elements.Length; i++)
+        for (int i = 0; i < Elements.Length; i++)
         {
-            var elResult = _elements[i].RestrictToMin(maxValues[i] - diff, variables);
+            var elResult = Elements[i].RestrictToMin(maxValues[i] - diff, variables);
             if (elResult == RestrictResult.Infeasible)
             {
                 // it should always be possible to set a lower minimum bound than the max possible value!
@@ -89,11 +129,11 @@ public sealed class SumExpression : Expression
 
     public override RestrictResult RestrictToMax(int maxValue, Dictionary<Variable, Variable> variables)
     {
-        var minValues = new int[_elements.Length];
+        var minValues = new int[Elements.Length];
         int minSum = 0;
-        for (int i = 0; i < _elements.Length; i++)
+        for (int i = 0; i < Elements.Length; i++)
         {
-            minValues[i] = _elements[i].GetMin(variables);
+            minValues[i] = Elements[i].GetMin(variables);
             minSum += minValues[i];
         }
 
@@ -103,9 +143,9 @@ public sealed class SumExpression : Expression
         var diff = maxValue - minSum;
 
         var result = RestrictResult.NoChange;
-        for (int i = 0; i < _elements.Length; i++)
+        for (int i = 0; i < Elements.Length; i++)
         {
-            var elResult = _elements[i].RestrictToMax(minValues[i] + diff, variables);
+            var elResult = Elements[i].RestrictToMax(minValues[i] + diff, variables);
             if (elResult == RestrictResult.Infeasible)
             {
                 // it should always be possible to set a higher maximum bound than the min possible value!
@@ -122,14 +162,14 @@ public sealed class SumExpression : Expression
 
     public override RestrictResult Exclude(int value, Dictionary<Variable, Variable> variables)
     {
-        var minValues = new int[_elements.Length];
-        var maxValues = new int[_elements.Length];
+        var minValues = new int[Elements.Length];
+        var maxValues = new int[Elements.Length];
         int minSum = 0, maxSum = 0;
-        for (int i = 0; i < _elements.Length; i++)
+        for (int i = 0; i < Elements.Length; i++)
         {
-            minValues[i] = _elements[i].GetMin(variables);
+            minValues[i] = Elements[i].GetMin(variables);
             minSum += minValues[i];
-            maxValues[i] = _elements[i].GetMax(variables);
+            maxValues[i] = Elements[i].GetMax(variables);
             maxSum += maxValues[i];
 
             if (value < minSum || maxSum < value)
@@ -149,13 +189,13 @@ public sealed class SumExpression : Expression
             var diff = maxValue - minSum;
 
             var result = RestrictResult.NoChange;
-            for (int i = 0; i < _elements.Length; i++)
+            for (int i = 0; i < Elements.Length; i++)
             {
                 var elMaxValue = minValues[i] + diff;
                 if (maxValues[i] <= elMaxValue)
                     continue;
 
-                var elResult = _elements[i].RestrictToMax(elMaxValue, variables);
+                var elResult = Elements[i].RestrictToMax(elMaxValue, variables);
                 if (elResult == RestrictResult.Infeasible)
                 {
                     // it should always be possible to set a higher maximum bound than the min possible value!
@@ -176,13 +216,13 @@ public sealed class SumExpression : Expression
             var diff = maxSum - minValue;
 
             var result = RestrictResult.NoChange;
-            for (int i = 0; i < _elements.Length; i++)
+            for (int i = 0; i < Elements.Length; i++)
             {
                 var elMinValue = maxValues[i] - diff;
                 if (elMinValue <= minValues[i])
                     continue;
                 
-                var elResult = _elements[i].RestrictToMin(elMinValue, variables);
+                var elResult = Elements[i].RestrictToMin(elMinValue, variables);
                 if (elResult == RestrictResult.Infeasible)
                 {
                     // it should always be possible to set a lower minimum bound than the max possible value!
@@ -202,6 +242,6 @@ public sealed class SumExpression : Expression
 
     public override IEnumerable<Variable> GetVariables()
     {
-        return _elements.SelectMany(e => e.GetVariables());
+        return Elements.SelectMany(e => e.GetVariables());
     }
 }

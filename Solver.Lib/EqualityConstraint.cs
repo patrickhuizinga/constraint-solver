@@ -1,12 +1,12 @@
 namespace Solver.Lib;
 
-public class Constraint
+public class EqualityConstraint : IConstraint
 {
     public Expression Left { get; }
     public Comparison Comparison { get; }
     public Expression Right { get; }
 
-    public Constraint(Expression left, Comparison comparison, Expression right)
+    public EqualityConstraint(Expression left, Comparison comparison, Expression right)
     {
         Left = left;
         Comparison = comparison;

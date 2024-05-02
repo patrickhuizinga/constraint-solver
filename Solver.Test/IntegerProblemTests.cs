@@ -10,8 +10,10 @@ public class IntegerProblemTests
         var problem = new IntegerProblem();
         var bin1 = problem.AddBinaryVariable();
         var bin2 = problem.AddBinaryVariable();
-        var sum = new SumExpression(bin1, bin2);
+        var sum = SumExpression.Create(bin1, bin2);
         problem.AddConstraint(sum, Comparison.Equals, 1);
+
+        var x = new DistinctConstraint(bin1, bin2) { DefaultValue = 0 };
 
         var result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));

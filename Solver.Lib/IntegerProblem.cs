@@ -3,7 +3,7 @@ namespace Solver.Lib;
 public class IntegerProblem
 {
     private readonly Dictionary<Variable, Variable> _variables = new();
-    private readonly List<Constraint> _constraints = [];
+    private readonly List<IConstraint> _constraints = [];
 
     public Variable this[Variable variable]
     {
@@ -13,11 +13,16 @@ public class IntegerProblem
 
     public bool IsSolved => _variables.Values.All(value => value is ConstantVariable);
 
+    public TVariable AddVariable<TVariable>(TVariable variable) where TVariable : Variable
+    {
+        _variables.Add(variable, variable);
+        return variable;
+    }
+
     public BinaryVariable AddBinaryVariable()
     {
-        var bv = new BinaryVariable();
-        _variables.Add(bv, bv);
-        return bv;
+        return AddVariable(
+            new BinaryVariable());
     }
 
     public BinaryVariable[] AddBinaryVariables(int count)
@@ -48,7 +53,7 @@ public class IntegerProblem
         var result = new BinaryVariable[countI, countJ, countK];
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
-        for(int k = 0; k < countK; k++)
+        for (int k = 0; k < countK; k++)
         {
             result[i, j, k] = AddBinaryVariable();
         }
@@ -56,26 +61,77 @@ public class IntegerProblem
         return result;
     }
 
-    public Constraint AddConstraint(Expression left, Comparison comparison, Expression right)
+    public Variable AddRangeVariable(Range range)
     {
-        var c = new Constraint(left, comparison, right);
-        _constraints.Add(c);
-        return c;
+        var min = range.Start.Value;
+        var max = range.End.Value;
+
+        return AddVariable(RangeVariable.Create(min, max));
     }
 
-    public Constraint AddConstraint(Expression left, Comparison comparison, int right)
+    public Variable[] AddRangeVariables(Range range, int count)
     {
-        return AddConstraint(left, comparison, new ConstantVariable(right));
+        var min = range.Start.Value;
+        var max = range.End.Value;
+
+        var result = new Variable[count];
+
+        for (int i = 0; i < count; i++)
+            result[i] = AddVariable(RangeVariable.Create(min, max));
+
+        return result;
     }
 
-    public void AddConstraint(Constraint constraint)
+    public Variable[,] AddRangeVariables(Range range, int countI, int countJ)
+    {
+        var min = range.Start.Value;
+        var max = range.End.Value;
+        
+        var result = new Variable[countI, countJ];
+
+        for (int i = 0; i < countI; i++)
+        for (int j = 0; j < countJ; j++)
+            result[i, j] = AddVariable(RangeVariable.Create(min, max));
+
+        return result;
+    }
+
+    public TConstraint AddConstraint<TConstraint>(TConstraint constraint) where TConstraint : IConstraint
     {
         _constraints.Add(constraint);
+        return constraint;
     }
 
-    public Constraint[] AddConstraints(Expression[] left, Comparison comparison, int right)
+    public void AddConstraints(IEnumerable<IConstraint> constraints)
     {
-        var result = new Constraint[left.Length];
+        foreach (var constraint in constraints)
+        {
+            AddConstraint(constraint);
+        }
+    }
+
+    public void AddConstraints<TConstraint>(TConstraint[,] constraints) where TConstraint : IConstraint
+    {
+        var countI = constraints.GetLength(0);
+        var countJ = constraints.GetLength(1);
+
+        for (int i = 0; i < countI; i++)
+        for (int j = 0; j < countJ; j++)
+        {
+            AddConstraint(constraints[i, j]);
+        }
+    }
+
+    public EqualityConstraint AddConstraint(Expression left, Comparison comparison, Expression right)
+    {
+        return AddConstraint(
+            new EqualityConstraint(left, comparison, right));
+    }
+
+    public EqualityConstraint[] AddConstraints<TExpression>(TExpression[] left, Comparison comparison, Expression right)
+        where TExpression : Expression
+    {
+        var result = new EqualityConstraint[left.Length];
         for (int i = 0; i < left.Length; i++)
         {
             result[i] = AddConstraint(left[i], comparison, right);
@@ -84,12 +140,13 @@ public class IntegerProblem
         return result;
     }
 
-    public Constraint[,] AddConstraints(Expression[,] left, Comparison comparison, int right)
+    public EqualityConstraint[,] AddConstraints<TExpression>(TExpression[,] left, Comparison comparison,
+        Expression right) where TExpression : Expression
     {
         var countI = left.GetLength(0);
         var countJ = left.GetLength(1);
-        
-        var result = new Constraint[countI, countJ];
+
+        var result = new EqualityConstraint[countI, countJ];
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
@@ -105,7 +162,7 @@ public class IntegerProblem
         while (true)
         {
             var result = RestrictOnce();
-            
+
             switch (result)
             {
                 case RestrictResult.Infeasible:
@@ -116,7 +173,7 @@ public class IntegerProblem
                     finalResult = RestrictResult.Change;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(result), result, "unknown result " + result); 
+                    throw new ArgumentOutOfRangeException(nameof(result), result, "unknown result " + result);
             }
         }
     }
@@ -139,7 +196,7 @@ public class IntegerProblem
     }
 
     public bool FindFeasible()
-    {   
+    {
         var result = Restrict();
         if (result == RestrictResult.Infeasible)
             return false;
@@ -176,16 +233,16 @@ public class IntegerProblem
         return false;
     }
 
-    private Constraint? GetWorstConstraint()
+    private IConstraint? GetWorstConstraint()
     {
-        Constraint? result = null;
+        IConstraint? result = null;
         int worstRange = int.MaxValue;
         foreach (var constraint in _constraints)
         {
             var range = constraint.Range(_variables);
             if (range == 0) continue;
             if (worstRange <= range) continue;
-            
+
             result = constraint;
             worstRange = range;
         }
