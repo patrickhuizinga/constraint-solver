@@ -2,8 +2,20 @@ namespace Solver.Lib;
 
 public class IntegerProblem
 {
-    private readonly List<VariableType> _variables = [];
-    private readonly List<IConstraint> _constraints = [];
+    private readonly List<VariableType> _variables;
+    private readonly List<IConstraint> _constraints;
+
+    public IntegerProblem()
+    {
+        _variables = [1];
+        _constraints = [];
+    }
+
+    public IntegerProblem(IntegerProblem source)
+    {
+        _variables = [..source._variables];
+        _constraints = [..source._constraints];
+    }
 
     public VariableType this[Variable variable]
     {
@@ -87,7 +99,7 @@ public class IntegerProblem
     {
         var min = range.Start.Value;
         var max = range.End.Value;
-        
+
         var result = new Variable[countI, countJ];
 
         for (int i = 0; i < countI; i++)
@@ -129,7 +141,8 @@ public class IntegerProblem
             new EqualityConstraint(left, comparison, right));
     }
 
-    public EqualityConstraint[] AddConstraints<TExpression>(TExpression[] left, Comparison comparison, Expression right)
+    public EqualityConstraint[] AddConstraints<TExpression>(
+        TExpression[] left, Comparison comparison, Expression right)
         where TExpression : Expression
     {
         var result = new EqualityConstraint[left.Length];
@@ -141,8 +154,9 @@ public class IntegerProblem
         return result;
     }
 
-    public EqualityConstraint[,] AddConstraints<TExpression>(TExpression[,] left, Comparison comparison,
-        Expression right) where TExpression : Expression
+    public EqualityConstraint[,] AddConstraints<TExpression>(
+        TExpression[,] left, Comparison comparison, Expression right)
+        where TExpression : Expression
     {
         var countI = left.GetLength(0);
         var countJ = left.GetLength(1);
@@ -217,7 +231,7 @@ public class IntegerProblem
 
             for (int i = value.Min; i <= value.Max; i++)
             {
-                var clone = Clone();
+                var clone = new IntegerProblem(this);
                 clone._variables[varIndex] = i;
 
                 if (clone.FindFeasible())
@@ -247,15 +261,6 @@ public class IntegerProblem
             result = constraint;
             worstRange = range;
         }
-
-        return result;
-    }
-
-    public IntegerProblem Clone()
-    {
-        var result = new IntegerProblem();
-        result._constraints.AddRange(_constraints);
-        result._variables.AddRange(_variables);
 
         return result;
     }
