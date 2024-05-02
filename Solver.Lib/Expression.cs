@@ -6,7 +6,7 @@ public abstract class Expression :
     IAdditionOperators<Expression, Expression, Expression>,
     IAdditionOperators<Expression, int, Expression>,
     ISubtractionOperators<Expression, int, Expression>,
-    IComparisonOperators<Expression, Expression, EqualityConstraint>
+    IComparisonOperators<Expression, Expression, ComparisonConstraint>
 {
     public abstract int GetMin(List<VariableType> variables);
     public abstract int GetMax(List<VariableType> variables);
@@ -47,17 +47,17 @@ public abstract class Expression :
         return new Add2Expression(this, new ConstantExpression(addition));
     }
 
-    public static EqualityConstraint operator <=(Expression left, Expression right)
+    public static ComparisonConstraint operator <=(Expression left, Expression right)
     {
-        return new EqualityConstraint(left, Comparison.LessEqual, right);
+        return new ComparisonConstraint(left, Comparison.LessEqual, right);
     }
 
-    public static EqualityConstraint operator >=(Expression left, Expression right)
+    public static ComparisonConstraint operator >=(Expression left, Expression right)
     {
-        return new EqualityConstraint(left, Comparison.GreaterEqual, right);
+        return new ComparisonConstraint(left, Comparison.GreaterEqual, right);
     }
 
-    public static EqualityConstraint operator <(Expression left, Expression right)
+    public static ComparisonConstraint operator <(Expression left, Expression right)
     {
         if (right is ConstantExpression cr)
             right = cr - 1;
@@ -71,7 +71,7 @@ public abstract class Expression :
         return left <= right;
     }
 
-    public static EqualityConstraint operator >(Expression left, Expression right)
+    public static ComparisonConstraint operator >(Expression left, Expression right)
     {
         if (right is ConstantExpression cr)
             right = cr + 1;
@@ -85,14 +85,14 @@ public abstract class Expression :
         return left >= right;
     }
 
-    public static EqualityConstraint operator ==(Expression left, Expression right)
+    public static ComparisonConstraint operator ==(Expression left, Expression right)
     {
-        return new EqualityConstraint(left, Comparison.Equals, right);
+        return new ComparisonConstraint(left, Comparison.Equals, right);
     }
 
-    public static EqualityConstraint operator !=(Expression left, Expression right)
+    public static ComparisonConstraint operator !=(Expression left, Expression right)
     {
-        return new EqualityConstraint(left, Comparison.NotEquals, right);
+        return new ComparisonConstraint(left, Comparison.NotEquals, right);
     }
 
     public static implicit operator Expression(int value)

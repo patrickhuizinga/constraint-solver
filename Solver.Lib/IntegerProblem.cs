@@ -135,17 +135,17 @@ public class IntegerProblem
         }
     }
 
-    public EqualityConstraint AddConstraint(Expression left, Comparison comparison, Expression right)
+    public ComparisonConstraint AddConstraint(Expression left, Comparison comparison, Expression right)
     {
         return AddConstraint(
-            new EqualityConstraint(left, comparison, right));
+            new ComparisonConstraint(left, comparison, right));
     }
 
-    public EqualityConstraint[] AddConstraints<TExpression>(
+    public ComparisonConstraint[] AddConstraints<TExpression>(
         TExpression[] left, Comparison comparison, Expression right)
         where TExpression : Expression
     {
-        var result = new EqualityConstraint[left.Length];
+        var result = new ComparisonConstraint[left.Length];
         for (int i = 0; i < left.Length; i++)
         {
             result[i] = AddConstraint(left[i], comparison, right);
@@ -154,14 +154,14 @@ public class IntegerProblem
         return result;
     }
 
-    public EqualityConstraint[,] AddConstraints<TExpression>(
+    public ComparisonConstraint[,] AddConstraints<TExpression>(
         TExpression[,] left, Comparison comparison, Expression right)
         where TExpression : Expression
     {
         var countI = left.GetLength(0);
         var countJ = left.GetLength(1);
 
-        var result = new EqualityConstraint[countI, countJ];
+        var result = new ComparisonConstraint[countI, countJ];
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
