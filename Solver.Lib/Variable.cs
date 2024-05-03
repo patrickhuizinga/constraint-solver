@@ -18,11 +18,6 @@ public class Variable(int index) : Expression
         return RestrictToMax(Index, maxValue, variables);
     }
 
-    public override RestrictResult Exclude(int value, IList<VariableType> variables)
-    {
-        return Exclude(Index, value, variables);
-    }
-
     public static int GetMin(int index, IList<VariableType> variables) => variables[index].Min;
 
     public static int GetMax(int index, IList<VariableType> variables) => variables[index].Max;

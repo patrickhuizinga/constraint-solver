@@ -2,18 +2,19 @@ using System.Numerics;
 
 namespace Solver.Lib;
 
+// == and != operators are *not* boolean, therefor overriding Equals and GetHashcode isn't needed
+#pragma warning disable CS0660, CS0661 
 public abstract class Expression :
     IAdditionOperators<Expression, Expression, Expression>,
     IAdditionOperators<Expression, int, Expression>,
     ISubtractionOperators<Expression, int, Expression>,
-    IComparisonOperators<Expression, Expression, IConstraint>
+    IComparisonOperators<Expression, Expression, IConstraint>,
+    IEqualityOperators<Expression, int, IConstraint>
 {
     public abstract int GetMin(IList<VariableType> variables);
     public abstract int GetMax(IList<VariableType> variables);
     public abstract RestrictResult RestrictToMin(int minValue, IList<VariableType> variables);
     public abstract RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables);
-
-    public abstract RestrictResult Exclude(int value, IList<VariableType> variables);
 
     public abstract IEnumerable<int> GetVariableIndices();
 

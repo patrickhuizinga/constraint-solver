@@ -38,16 +38,22 @@ public class ComparisonConstraint : IConstraint
             case Comparison.NotEquals:
                 var rightMin = Right.GetMin(variables);
                 var rightMax = Right.GetMax(variables);
-                if (rightMin == rightMax)
-                {
-                    return Left.Exclude(rightMin, variables);
-                }
-                
                 var leftMin = Left.GetMin(variables);
                 var leftMax = Left.GetMax(variables);
-                if (leftMin == leftMax)
+
+                if (rightMin == rightMax)
                 {
-                    return Right.Exclude(leftMin, variables);
+                    if (rightMin == leftMin)
+                        return Left.RestrictToMin(rightMin + 1, variables);
+                    if (rightMin == leftMax)
+                        return Left.RestrictToMax(rightMin - 1, variables);
+                }
+                else if (leftMin == leftMax)
+                {
+                    if (leftMin == rightMin)
+                        return Right.RestrictToMin(leftMin + 1, variables);
+                    if (leftMin == rightMax)
+                        return Right.RestrictToMax(leftMin - 1, variables);
                 }
 
                 return RestrictResult.NoChange;

@@ -50,12 +50,7 @@ public class RangeType : VariableType
         if (value == Max)
             return Create(Min, value - 1);
 
-        if (value < Min || Max < value)
-            return this;
-
-        return CompoundType.Create(
-            Create(Min, value - 1),
-            Create(value + 1, Max));
+        return this;    
     }
 
     public override string ToString()

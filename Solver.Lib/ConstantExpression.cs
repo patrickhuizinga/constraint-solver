@@ -27,13 +27,6 @@ public class ConstantExpression(int value) : Expression
             : RestrictResult.Infeasible;
     }
 
-    public override RestrictResult Exclude(int value, IList<VariableType> variables)
-    {
-        return value == Value
-            ? RestrictResult.Infeasible
-            : RestrictResult.NoChange;
-    }
-
     public override IEnumerable<int> GetVariableIndices() => Enumerable.Empty<int>();
 
     public override string ToString()
