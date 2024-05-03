@@ -17,7 +17,7 @@ public class SudokuTests
         problem.AddConstraints(sum1, Comparison.Equals, 1);
         problem.AddConstraints(sum2, Comparison.Equals, 1);
 
-        problem[variables[1, 0, 1]] = 1;
+        problem[variables[1, 0, 1]] = VariableType.True;
 
         var result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
@@ -152,7 +152,7 @@ public class SudokuTests
                 continue;
             
             var k = start[i, j] - 1;
-            problem[variables[i, j, k]] = 1;
+            problem[variables[i, j, k]] = VariableType.True;
         }
     }
 
@@ -223,7 +223,7 @@ public class SudokuTests
                 continue;
             
             var k = start[i, j] - 1;
-            integerProblem[variables[i, j, k]] = 0;
+            integerProblem[variables[i, j, k]] = VariableType.False;
         }
     }
 
@@ -231,7 +231,7 @@ public class SudokuTests
     public void RangeSudoku()
     {   
         var problem = new IntegerProblem();
-        var variables = problem.AddRangeVariables(1..9, 9, 9);
+        var variables = problem.AddVariables(1..9, 9, 9);
         var distinctRows = Distinct(variables, 0);
         var distinctCols = Distinct(variables, 1);
         var distinctBlocks = DistinctBlocks(variables, 3);
@@ -375,7 +375,7 @@ public class SudokuTests
                 continue;
             
             var k = start[i, j] - 1;
-            problem[variables[i, j, k]] = 1;
+            problem[variables[i, j, k]] = VariableType.True;
         }
     }
 

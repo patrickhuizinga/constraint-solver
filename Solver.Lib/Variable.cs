@@ -26,9 +26,9 @@ public class Variable(int index) : Expression
     {
         var oldVal = variables[index];
         var newVal = oldVal.TryRestrictToMin(minValue);
-        if (ReferenceEquals(newVal, null))
+        if (newVal == null)
             return RestrictResult.Infeasible;
-        if (ReferenceEquals(newVal, oldVal))
+        if (newVal == oldVal)
             return RestrictResult.NoChange;
 
         variables[index] = newVal;

@@ -75,7 +75,7 @@ public class IntegerProblem
         }
     }
 
-    public bool IsSolved => _variables.All(value => value is ConstantType);
+    public bool IsSolved => _variables.All(value => value.IsConstant);
 
     public Variable AddVariable(VariableType variable)
     {
@@ -84,82 +84,48 @@ public class IntegerProblem
         return new Variable(index);
     }
 
-    public Variable AddBinaryVariable()
-    {
-        return AddVariable(
-            new BinaryType());
-    }
-
-    public Variable[] AddBinaryVariables(int count)
+    public Variable[] AddVariables(VariableType variable, int count)
     {
         var result = new Variable[count];
+
         for (int i = 0; i < count; i++)
-        {
-            result[i] = AddBinaryVariable();
-        }
+            result[i] = AddVariable(variable);
 
         return result;
     }
 
-    public Variable[,] AddBinaryVariables(int countI, int countJ)
+    public Variable[,] AddVariables(VariableType variable, int countI, int countJ)
     {
         var result = new Variable[countI, countJ];
+
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
-        {
-            result[i, j] = AddBinaryVariable();
-        }
+            result[i, j] = AddVariable(variable);
 
         return result;
     }
 
-    public Variable[,,] AddBinaryVariables(int countI, int countJ, int countK)
+    public Variable[,,] AddVariables(VariableType variable, int countI, int countJ, int countK)
     {
         var result = new Variable[countI, countJ, countK];
+        
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         for (int k = 0; k < countK; k++)
         {
-            result[i, j, k] = AddBinaryVariable();
+            result[i, j, k] = AddVariable(variable);
         }
 
         return result;
     }
 
-    public Variable AddRangeVariable(Range range)
-    {
-        var min = range.Start.Value;
-        var max = range.End.Value;
+    public Variable AddBinaryVariable() => AddVariable(VariableType.Binary);
 
-        return AddVariable(RangeType.Create(min, max));
-    }
+    public Variable[] AddBinaryVariables(int count) => AddVariables(VariableType.Binary, count);
 
-    public Variable[] AddRangeVariables(Range range, int count)
-    {
-        var min = range.Start.Value;
-        var max = range.End.Value;
+    public Variable[,] AddBinaryVariables(int countI, int countJ) => AddVariables(VariableType.Binary, countI, countJ);
 
-        var result = new Variable[count];
-
-        for (int i = 0; i < count; i++)
-            result[i] = AddVariable(RangeType.Create(min, max));
-
-        return result;
-    }
-
-    public Variable[,] AddRangeVariables(Range range, int countI, int countJ)
-    {
-        var min = range.Start.Value;
-        var max = range.End.Value;
-
-        var result = new Variable[countI, countJ];
-
-        for (int i = 0; i < countI; i++)
-        for (int j = 0; j < countJ; j++)
-            result[i, j] = AddVariable(RangeType.Create(min, max));
-
-        return result;
-    }
+    public Variable[,,] AddBinaryVariables(int countI, int countJ, int countK) => AddVariables(VariableType.Binary, countI, countJ, countK);
 
     public TConstraint AddConstraint<TConstraint>(TConstraint constraint) where TConstraint : IConstraint
     {

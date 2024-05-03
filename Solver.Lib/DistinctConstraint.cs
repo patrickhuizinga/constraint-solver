@@ -25,15 +25,15 @@ public class DistinctConstraint : IConstraint
         
         foreach (var i in _variableIndices)
         {
-            if (variables[i] is not ConstantType cv) continue;
+            if (!variables[i].TryGetConstant(out int value)) continue;
             
-            if (cv.Value == DefaultValue) continue;
+            if (value == DefaultValue) continue;
             
             foreach (var j in _variableIndices)
             {
                 if (i == j) continue;
 
-                var elResult = Variable.Exclude(j, cv.Value, variables);
+                var elResult = Variable.Exclude(j, value, variables);
                 if (elResult == RestrictResult.Infeasible)
                     return RestrictResult.Infeasible;
 

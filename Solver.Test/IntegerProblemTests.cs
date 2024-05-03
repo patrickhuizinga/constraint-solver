@@ -18,7 +18,7 @@ public class IntegerProblemTests
         var res = problem[bin];
         Console.WriteLine(res[0] + " , " + res[1]);
 
-        problem[bin[0]] = new ConstantType(1);
+        problem[bin[0]] = VariableType.Constant(1);
         result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
 
@@ -40,7 +40,7 @@ public class IntegerProblemTests
         var res = problem[bin];
         Console.WriteLine(res[0] + " , " + res[1]);
 
-        problem[bin[0]] = 1;
+        problem[bin[0]] = VariableType.True;
         result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
 
@@ -64,7 +64,7 @@ public class IntegerProblemTests
         var res2 = problem[bin2];
         Console.WriteLine(res1 + " , " + res2);
 
-        problem[bin1] = 1;
+        problem[bin1] = VariableType.True;
         result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
 
