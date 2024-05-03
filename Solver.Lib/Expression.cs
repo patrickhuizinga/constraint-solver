@@ -6,14 +6,14 @@ public abstract class Expression :
     IAdditionOperators<Expression, Expression, Expression>,
     IAdditionOperators<Expression, int, Expression>,
     ISubtractionOperators<Expression, int, Expression>,
-    IComparisonOperators<Expression, Expression, ComparisonConstraint>
+    IComparisonOperators<Expression, Expression, IConstraint>
 {
-    public abstract int GetMin(List<VariableType> variables);
-    public abstract int GetMax(List<VariableType> variables);
-    public abstract RestrictResult RestrictToMin(int minValue, List<VariableType> variables);
-    public abstract RestrictResult RestrictToMax(int maxValue, List<VariableType> variables);
+    public abstract int GetMin(IList<VariableType> variables);
+    public abstract int GetMax(IList<VariableType> variables);
+    public abstract RestrictResult RestrictToMin(int minValue, IList<VariableType> variables);
+    public abstract RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables);
 
-    public abstract RestrictResult Exclude(int value, List<VariableType> variables);
+    public abstract RestrictResult Exclude(int value, IList<VariableType> variables);
 
     public abstract IEnumerable<int> GetVariableIndices();
 
@@ -47,17 +47,17 @@ public abstract class Expression :
         return new Add2Expression(this, new ConstantExpression(addition));
     }
 
-    public static ComparisonConstraint operator <=(Expression left, Expression right)
+    public static IConstraint operator <=(Expression left, Expression right)
     {
-        return new ComparisonConstraint(left, Comparison.LessEqual, right);
+        return ComparisonConstraint.Create(left, Comparison.LessEqual, right);
     }
 
-    public static ComparisonConstraint operator >=(Expression left, Expression right)
+    public static IConstraint operator >=(Expression left, Expression right)
     {
-        return new ComparisonConstraint(left, Comparison.GreaterEqual, right);
+        return ComparisonConstraint.Create(left, Comparison.GreaterEqual, right);
     }
 
-    public static ComparisonConstraint operator <(Expression left, Expression right)
+    public static IConstraint operator <(Expression left, Expression right)
     {
         if (right is ConstantExpression cr)
             right = cr - 1;
@@ -71,7 +71,7 @@ public abstract class Expression :
         return left <= right;
     }
 
-    public static ComparisonConstraint operator >(Expression left, Expression right)
+    public static IConstraint operator >(Expression left, Expression right)
     {
         if (right is ConstantExpression cr)
             right = cr + 1;
@@ -85,14 +85,24 @@ public abstract class Expression :
         return left >= right;
     }
 
-    public static ComparisonConstraint operator ==(Expression left, Expression right)
+    public static IConstraint operator ==(Expression left, Expression right)
     {
-        return new ComparisonConstraint(left, Comparison.Equals, right);
+        return new EqualityConstraint(left, right);
     }
 
-    public static ComparisonConstraint operator !=(Expression left, Expression right)
+    public static IConstraint operator !=(Expression left, Expression right)
     {
-        return new ComparisonConstraint(left, Comparison.NotEquals, right);
+        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
+    }
+
+    public static IConstraint operator ==(Expression left, int right)
+    {
+        return new EqualityConstraint(left, right);
+    }
+
+    public static IConstraint operator !=(Expression left, int right)
+    {
+        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
     }
 
     public static implicit operator Expression(int value)

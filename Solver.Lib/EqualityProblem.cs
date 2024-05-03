@@ -1,20 +1,33 @@
+using System.Collections;
+
 namespace Solver.Lib;
 
-public class IntegerProblem
+public class EqualityProblem
 {
-    private readonly List<VariableType> _variables;
-    private readonly List<IConstraint> _constraints;
+    private readonly ModifyTrackerList<VariableType> _variables;
+    private readonly List<EqualityConstraint> _constraints;
+    private readonly List<List<int>> _variableToConstraint;
 
-    public IntegerProblem()
+    public EqualityProblem()
     {
-        _variables = [1];
+        _variables = new ModifyTrackerList<VariableType>();
         _constraints = [];
+        _variableToConstraint = [];
+        
+        _variables.Add(1);
+        _variableToConstraint.Add([]);
     }
 
-    public IntegerProblem(IntegerProblem source)
+    public EqualityProblem(EqualityProblem source)
     {
-        _variables = [..source._variables];
-        _constraints = [..source._constraints];
+        _variables = new ModifyTrackerList<VariableType>(source._variables);
+        _constraints = source._constraints
+            // .Select(constraint => constraint.Clone())
+            // .ToList()
+            ;
+        _variableToConstraint = source._variableToConstraint
+            .Select(Enumerable.ToList)
+            .ToList();
     }
 
     public VariableType this[Variable variable]
@@ -81,6 +94,7 @@ public class IntegerProblem
     {
         var index = _variables.Count;
         _variables.Add(variable);
+        _variableToConstraint.Add([]);
         return new Variable(index);
     }
 
@@ -161,66 +175,25 @@ public class IntegerProblem
         return result;
     }
 
-    public TConstraint AddConstraint<TConstraint>(TConstraint constraint) where TConstraint : IConstraint
-    {
-        _constraints.Add(constraint);
-        return constraint;
-    }
-
-    public void AddConstraints(IEnumerable<IConstraint> constraints)
-    {
-        foreach (var constraint in constraints)
-        {
-            AddConstraint(constraint);
-        }
-    }
-
-    public void AddConstraints<TConstraint>(TConstraint[,] constraints) where TConstraint : IConstraint
-    {
-        var countI = constraints.GetLength(0);
-        var countJ = constraints.GetLength(1);
-
-        for (int i = 0; i < countI; i++)
-        for (int j = 0; j < countJ; j++)
-        {
-            AddConstraint(constraints[i, j]);
-        }
-    }
-
-    public IConstraint AddConstraint(Expression left, Comparison comparison, Expression right)
-    {
-        return AddConstraint(
-            ComparisonConstraint.Create(left, comparison, right));
-    }
-
-    public IConstraint[] AddConstraints<TExpression>(
-        TExpression[] left, Comparison comparison, Expression right)
-        where TExpression : Expression
-    {
-        var result = new IConstraint[left.Length];
-        for (int i = 0; i < left.Length; i++)
-        {
-            result[i] = AddConstraint(left[i], comparison, right);
-        }
-
-        return result;
-    }
-
-    public IConstraint[,] AddConstraints<TExpression>(
-        TExpression[,] left, Comparison comparison, Expression right)
+    public void AddConstraints<TExpression>(
+        TExpression[,] left, int right)
         where TExpression : Expression
     {
         var countI = left.GetLength(0);
         var countJ = left.GetLength(1);
 
-        var result = new IConstraint[countI, countJ];
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
-            result[i, j] = AddConstraint(left[i, j], comparison, right);
-        }
+            var constraintIndex = _constraints.Count;
+            var constraint = new EqualityConstraint(left[i, j], right);
+            _constraints.Add(constraint);
 
-        return result;
+            foreach (var index in constraint.GetVariableIndices())
+            {
+                _variableToConstraint[index].Add(constraintIndex);
+            }
+        }
     }
 
     public RestrictResult Restrict()
@@ -249,16 +222,41 @@ public class IntegerProblem
     {
         var result = RestrictResult.NoChange;
 
-        foreach (var constraint in _constraints)
-        {
-            var constraintResult = constraint.Restrict(_variables);
-            if (constraintResult == RestrictResult.Infeasible)
-                return RestrictResult.Infeasible;
+        var modifiedVariables = _variables.GetModifications()
+            .Distinct()
+            .ToList();
+        _variables.ClearModifications();
+        var modifiedConstraints = modifiedVariables
+            .SelectMany(varIndex => _variableToConstraint[varIndex])
+            .Distinct();
 
-            if (result == RestrictResult.NoChange)
-                result = constraintResult;
+        if (modifiedVariables.Count == 0)
+        {
+            modifiedConstraints = Enumerable.Range(0, _constraints.Count);
         }
 
+        foreach (var constraint in modifiedConstraints.Select(i => _constraints[i]))
+        {
+            switch (constraint.Restrict(_variables))
+            {
+                case RestrictResult.Infeasible:
+                    return RestrictResult.Infeasible;
+                case RestrictResult.Change:
+                    result = RestrictResult.Change;
+                    break;
+                case RestrictResult.NoChange:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        foreach (var variableIndex in modifiedVariables)
+        {
+            if (_variables[variableIndex] is ConstantType)
+                _variableToConstraint[variableIndex].Clear();
+        }
+        
         return result;
     }
 
@@ -280,13 +278,16 @@ public class IntegerProblem
         // Larger values are more likely be decisive, probably
         for (int value = variable.Max; value >= variable.Min; value--)
         {
-            var clone = new IntegerProblem(this);
+            var clone = new EqualityProblem(this);
+                
             clone._variables[variableIndex] = value;
-
+            
             if (clone.FindFeasible())
             {
                 _variables.Clear();
                 _variables.AddRange(clone._variables);
+                _constraints.Clear();
+                _variableToConstraint.Clear();
                 return true;
             }
         }
@@ -316,5 +317,101 @@ public class IntegerProblem
         }
 
         return index;
+    }
+
+
+    private sealed class ModifyTrackerList<T> : IList<T>
+    {
+        private readonly List<T> _items = [];
+        private readonly List<int> _modifiedIndices = [];
+
+        public ModifyTrackerList()
+        {
+        }
+
+        public ModifyTrackerList(IEnumerable<T> items)
+        {
+            _items.AddRange(items);
+        }
+        
+        public void AddRange(IEnumerable<T> items)
+        {
+            _items.AddRange(items);
+        }
+        
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _items.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)_items).GetEnumerator();
+        }
+
+        public void Add(T item)
+        {
+            _items.Add(item);
+        }
+
+        public void Clear()
+        {
+            _items.Clear();
+            _modifiedIndices.Clear();
+        }
+
+        public bool Contains(T item)
+        {
+            return _items.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            _items.CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public int Count => _items.Count;
+
+        public bool IsReadOnly => false;
+
+        public int IndexOf(T item)
+        {
+            return _items.IndexOf(item);
+        }
+
+        public void Insert(int index, T item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void RemoveAt(int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        public T this[int index]
+        {
+            get => _items[index];
+            set
+            {
+                _items[index] = value;
+                _modifiedIndices.Add(index);
+            }
+        }
+
+        public IEnumerable<int> GetModifications()
+        {
+            return _modifiedIndices;
+        }
+
+        public void ClearModifications()
+        {
+            _modifiedIndices.Clear();
+        }
     }
 }

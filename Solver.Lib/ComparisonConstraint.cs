@@ -6,14 +6,24 @@ public class ComparisonConstraint : IConstraint
     public Comparison Comparison { get; }
     public Expression Right { get; }
 
-    public ComparisonConstraint(Expression left, Comparison comparison, Expression right)
+    private ComparisonConstraint(Expression left, Comparison comparison, Expression right)
     {
         Left = left;
         Comparison = comparison;
         Right = right;
     }
 
-    public RestrictResult Restrict(List<VariableType> variables)
+    public static IConstraint Create(Expression left, Comparison comparison, Expression right)
+    {
+        if (comparison == Comparison.Equals)
+        {
+            return new EqualityConstraint(left, right);
+        }
+
+        return new ComparisonConstraint(left, comparison, right);
+    }
+
+    public RestrictResult Restrict(IList<VariableType> variables)
     {
         switch (Comparison)
         {
@@ -46,7 +56,7 @@ public class ComparisonConstraint : IConstraint
         }
     }
 
-    private RestrictResult RestrictLessThan(List<VariableType> variables)
+    private RestrictResult RestrictLessThan(IList<VariableType> variables)
     {
         var rightMax = Right.GetMax(variables);
         var leftResult = Left.RestrictToMax(rightMax, variables);
@@ -56,7 +66,7 @@ public class ComparisonConstraint : IConstraint
         return Combine(leftResult, rightResult);
     }
 
-    private RestrictResult RestrictGreaterThan(List<VariableType> variables)
+    private RestrictResult RestrictGreaterThan(IList<VariableType> variables)
     {
         var rightMin = Right.GetMin(variables);
         var leftResult = Left.RestrictToMin(rightMin, variables);
@@ -77,7 +87,7 @@ public class ComparisonConstraint : IConstraint
         return RestrictResult.NoChange;
     }
 
-    public int Range(List<VariableType> variables)
+    public int Range(IList<VariableType> variables)
     {
         switch (Comparison)
         {

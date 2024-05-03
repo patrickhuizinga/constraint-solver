@@ -6,7 +6,7 @@ public sealed class SumExpression : Expression
 {
     internal readonly Expression[] Elements;
 
-    private SumExpression(params Expression[] elements)
+    private SumExpression(Expression[] elements)
     {
         Elements = elements;
     }
@@ -23,15 +23,15 @@ public sealed class SumExpression : Expression
 
     public static Expression Create(Expression first, Expression second, Expression third)
     {
-        return new SumExpression(first, second, third);
+        return new SumExpression([first, second, third]);
     }
 
     public static Expression Create(Expression first, Expression second, Expression third, Expression fourth)
     {
-        return new SumExpression(first, second, third, fourth);
+        return new SumExpression([first, second, third, fourth]);
     }
 
-    public static Expression Create(params Expression[] elements)
+    public static Expression Create<TExpression>(params TExpression[] elements) where TExpression : Expression
     {
         return elements.Length switch
         {
@@ -90,11 +90,11 @@ public sealed class SumExpression : Expression
         }
     }
 
-    public override int GetMin(List<VariableType> variables) => Elements.Sum(e => e.GetMin(variables));
+    public override int GetMin(IList<VariableType> variables) => Elements.Sum(e => e.GetMin(variables));
 
-    public override int GetMax(List<VariableType> variables) => Elements.Sum(e => e.GetMax(variables));
+    public override int GetMax(IList<VariableType> variables) => Elements.Sum(e => e.GetMax(variables));
     
-    public override RestrictResult RestrictToMin(int minValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
     {
         var maxValues = new int[Elements.Length];
         int maxSum = 0;
@@ -127,7 +127,7 @@ public sealed class SumExpression : Expression
         return result;
     }
 
-    public override RestrictResult RestrictToMax(int maxValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
     {
         var minValues = new int[Elements.Length];
         int minSum = 0;
@@ -160,7 +160,7 @@ public sealed class SumExpression : Expression
         return result;
     }
 
-    public override RestrictResult Exclude(int value, List<VariableType> variables)
+    public override RestrictResult Exclude(int value, IList<VariableType> variables)
     {
         var minValues = new int[Elements.Length];
         var maxValues = new int[Elements.Length];

@@ -4,30 +4,30 @@ public class Variable(int index) : Expression
 {
     public int Index { get; } = index;
 
-    public override int GetMin(List<VariableType> variables) => GetMin(Index, variables);
+    public override int GetMin(IList<VariableType> variables) => GetMin(Index, variables);
 
-    public override int GetMax(List<VariableType> variables) => GetMax(Index, variables);
+    public override int GetMax(IList<VariableType> variables) => GetMax(Index, variables);
 
-    public override RestrictResult RestrictToMin(int minValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
     {
         return RestrictToMin(Index, minValue, variables);
     }
 
-    public override RestrictResult RestrictToMax(int maxValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
     {
         return RestrictToMax(Index, maxValue, variables);
     }
 
-    public override RestrictResult Exclude(int value, List<VariableType> variables)
+    public override RestrictResult Exclude(int value, IList<VariableType> variables)
     {
         return Exclude(Index, value, variables);
     }
 
-    public static int GetMin(int index, List<VariableType> variables) => variables[index].Min;
+    public static int GetMin(int index, IList<VariableType> variables) => variables[index].Min;
 
-    public static int GetMax(int index, List<VariableType> variables) => variables[index].Max;
+    public static int GetMax(int index, IList<VariableType> variables) => variables[index].Max;
 
-    public static RestrictResult RestrictToMin(int index, int minValue, List<VariableType> variables)
+    public static RestrictResult RestrictToMin(int index, int minValue, IList<VariableType> variables)
     {
         var oldVal = variables[index];
         var newVal = oldVal.TryRestrictToMin(minValue);
@@ -40,7 +40,7 @@ public class Variable(int index) : Expression
         return RestrictResult.Change;
     }
 
-    public static RestrictResult RestrictToMax(int index, int maxValue, List<VariableType> variables)
+    public static RestrictResult RestrictToMax(int index, int maxValue, IList<VariableType> variables)
     {
         var oldVal = variables[index];
         var newVal = oldVal.TryRestrictToMax(maxValue);
@@ -53,7 +53,7 @@ public class Variable(int index) : Expression
         return RestrictResult.Change;
     }
 
-    public static RestrictResult Exclude(int index, int value, List<VariableType> variables)
+    public static RestrictResult Exclude(int index, int value, IList<VariableType> variables)
     {
         var oldVal = variables[index];
         var newVal = oldVal.TryExclude(value);

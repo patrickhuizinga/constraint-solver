@@ -2,7 +2,7 @@ namespace Solver.Lib;
 
 public interface IConstraint
 {
-    RestrictResult Restrict(List<VariableType> variables);
-    int Range(List<VariableType> variables);
+    RestrictResult Restrict(IList<VariableType> variables);
+    int Range(IList<VariableType> variables);
     IEnumerable<int> GetVariableIndices();
 }

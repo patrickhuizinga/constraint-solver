@@ -47,13 +47,13 @@ public sealed class Add2Expression : Expression
         return SumExpression.Create(First, Second, addition);
     }
 
-    public override int GetMin(List<VariableType> variables) =>
+    public override int GetMin(IList<VariableType> variables) =>
         First.GetMin(variables) + Second.GetMin(variables);
 
-    public override int GetMax(List<VariableType> variables) =>
+    public override int GetMax(IList<VariableType> variables) =>
         First.GetMax(variables) + Second.GetMax(variables);
 
-    public override RestrictResult RestrictToMin(int minValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
     {
         int firstMax = First.GetMax(variables);
         int secondMax = Second.GetMax(variables);
@@ -83,7 +83,7 @@ public sealed class Add2Expression : Expression
         return firstResult == RestrictResult.NoChange ? secondResult : firstResult;
     }
 
-    public override RestrictResult RestrictToMax(int maxValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
     {
         int firstMin = First.GetMin(variables);
         int secondMin = Second.GetMin(variables);
@@ -113,7 +113,7 @@ public sealed class Add2Expression : Expression
         return firstResult == RestrictResult.NoChange ? secondResult : firstResult;
     }
 
-    public override RestrictResult Exclude(int value, List<VariableType> variables)
+    public override RestrictResult Exclude(int value, IList<VariableType> variables)
     {
         int firstMin = First.GetMin(variables);
         int secondMin = Second.GetMin(variables);

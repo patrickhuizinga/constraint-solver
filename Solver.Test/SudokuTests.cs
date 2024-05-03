@@ -25,21 +25,7 @@ public class SudokuTests
         result = problem.Restrict();
         Assert.That(result, Is.EqualTo(RestrictResult.NoChange));
 
-        for (int i = 0; i < 2; i++)
-        {
-            Console.Write("[");
-            for (int j = 0; j < 2; j++)
-            {
-                if (problem[variables[i, j, 0]].Min == 1)
-                    Console.Write("1, ");
-                else if (problem[variables[i, j, 0]].Max == 0)
-                    Console.Write("2, ");
-                else
-                    Console.Write("?, ");
-            }
-
-            Console.WriteLine("]");
-        }
+        PrintSudoku(problem[variables]);
     }
 
     [Test]
@@ -74,25 +60,7 @@ public class SudokuTests
         result = problem.Restrict();
         Assert.That(result, Is.EqualTo(RestrictResult.NoChange));
 
-        for (int i = 0; i < 4; i++)
-        {
-            Console.Write("[");
-            for (int j = 0; j < 4; j++)
-            {
-                if (problem[variables[i, j, 0]].Max == 1)
-                    Console.Write("1");
-                if (problem[variables[i, j, 1]].Max == 1)
-                    Console.Write("2");
-                if (problem[variables[i, j, 2]].Max == 1)
-                    Console.Write("3");
-                if (problem[variables[i, j, 3]].Max == 1)
-                    Console.Write("4");
-
-                Console.Write(", ");
-            }
-
-            Console.WriteLine("]");
-        }
+        PrintSudoku(problem[variables]);
     }
 
     [Test]
@@ -129,22 +97,7 @@ public class SudokuTests
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
         Assert.That(problem.IsSolved);
 
-        for (int i = 0; i < 9; i++)
-        {
-            Console.Write("[");
-            for (int j = 0; j < 9; j++)
-            {
-                for (int k = 0; k < 9; k++)
-                {
-                    if (problem[variables[i, j, k]].Max == 1)
-                        Console.Write(k + 1); 
-                }
-
-                Console.Write(", ");
-            }
-
-            Console.WriteLine("]");
-        }
+        PrintSudoku(problem[variables]);
     }
 
     [Test]
@@ -177,26 +130,15 @@ public class SudokuTests
 
         SetStart(problem, variables, extreme);
 
+        problem.Restrict();
+        PrintSudoku(problem[variables]);
+        Console.WriteLine();
+
         var isSolved = problem.FindFeasible();
         Assert.That(isSolved);
         Assert.That(problem.IsSolved);
 
-        for (int i = 0; i < 9; i++)
-        {
-            Console.Write("[");
-            for (int j = 0; j < 9; j++)
-            {
-                for (int k = 0; k < 9; k++)
-                {
-                    if (problem[variables[i, j, k]].Max == 1)
-                        Console.Write(k + 1); 
-                }
-
-                Console.Write(", ");
-            }
-
-            Console.WriteLine("]");
-        }
+        PrintSudoku(problem[variables]);
     }
 
     private static void SetStart(IntegerProblem problem, Variable[,,] variables, int[,] start)
@@ -251,6 +193,7 @@ public class SudokuTests
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
         Assert.That(problem.IsSolved);
 
+        var values = problem[variables];
         for (int i = 0; i < 9; i++)
         {
             Console.Write("[");
@@ -258,7 +201,7 @@ public class SudokuTests
             {
                 for (int k = 0; k < 9; k++)
                 {
-                    if (problem[variables[i, j, k]].Min == 0)
+                    if (values[i, j, k].Min == 0)
                         Console.Write(k + 1); 
                 }
 
@@ -340,6 +283,123 @@ public class SudokuTests
                 continue;
             
             problem[variables[i, j]] = start[i, j];
+        }
+    }
+
+    [Test]
+    public void EqualitySudoku()
+    {
+        var problem = new EqualityProblem();
+        var variables = problem.AddBinaryVariables(9, 9, 9);
+        var sum0 = Sum(variables, 0);
+        var sum1 = Sum(variables, 1);
+        var sum2 = Sum(variables, 2);
+        var sumBlocks = SumBlocks(variables, 3);
+
+        problem.AddConstraints(sum0, 1);
+        problem.AddConstraints(sum1, 1);
+        problem.AddConstraints(sum2, 1);
+        problem.AddConstraints(sumBlocks, 1);
+
+        int[,] medium =
+        {
+            { 0, 0, 4, 0, 7, 0, 0, 9, 1 },
+            { 0, 3, 0, 0, 0, 8, 0, 0, 0 },
+            { 0, 6, 7, 0, 0, 0, 3, 0, 5 },
+            { 0, 4, 0, 9, 3, 0, 0, 0, 0 },
+            { 0, 0, 1, 0, 0, 0, 9, 0, 0 },
+            { 0, 0, 0, 8, 0, 4, 0, 3, 6 },
+            { 4, 7, 0, 3, 5, 0, 6, 1, 2 },
+            { 9, 2, 0, 7, 8, 1, 4, 0, 3 },
+            { 5, 1, 0, 0, 0, 6, 0, 0, 0 },
+        };
+
+        SetStart(problem, variables, medium);
+
+        var result = problem.Restrict();
+        Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
+        Assert.That(problem.IsSolved);
+
+        PrintSudoku(problem[variables]);
+    }
+
+    [Test]
+    public void ExpertEqualitySudoku()
+    {
+        var problem = new EqualityProblem();
+        var variables = problem.AddBinaryVariables(9, 9, 9);
+        var sum0 = Sum(variables, 0);
+        var sum1 = Sum(variables, 1);
+        var sum2 = Sum(variables, 2);
+        var sumBlocks = SumBlocks(variables, 3);
+
+        problem.AddConstraints(sum0, 1);
+        problem.AddConstraints(sum1, 1);
+        problem.AddConstraints(sum2, 1);
+        problem.AddConstraints(sumBlocks, 1);
+
+        int[,] extreme =
+        {
+            { 4, 1, 0, 0, 0, 0, 0, 0, 0 },
+            { 0, 0, 3, 0, 0, 0, 0, 2, 9 },
+            { 0, 0, 0, 0, 0, 4, 0, 6, 0 },
+            { 0, 0, 0, 7, 0, 0, 0, 9, 0 },
+            { 0, 0, 7, 4, 0, 0, 0, 0, 2 },
+            { 0, 0, 0, 0, 0, 8, 0, 0, 5 },
+            { 6, 7, 0, 0, 0, 1, 0, 0, 0 },
+            { 0, 0, 9, 0, 2, 0, 0, 0, 3 },
+            { 0, 3, 0, 0, 0, 9, 0, 5, 0 },
+        };
+
+        SetStart(problem, variables, extreme);
+
+        problem.Restrict();
+        PrintSudoku(problem[variables]);
+        Console.WriteLine();
+
+        var isSolved = problem.FindFeasible();
+        Assert.That(isSolved);
+        Assert.That(problem.IsSolved);
+
+        PrintSudoku(problem[variables]);
+    }
+
+    private static void SetStart(EqualityProblem problem, Variable[,,] variables, int[,] start)
+    {
+        var countI = start.GetLength(0);
+        var countJ = start.GetLength(1);
+        for (int i = 0; i < countI; i++)
+        for (int j = 0; j < countJ; j++)
+        {
+            if (start[i, j] == 0)
+                continue;
+            
+            var k = start[i, j] - 1;
+            problem[variables[i, j, k]] = 1;
+        }
+    }
+
+    private static void PrintSudoku(VariableType[,,] values)
+    {
+        var lengthI = values.GetLength(0);
+        var lengthJ = values.GetLength(1);
+        var lengthK = values.GetLength(2);
+        
+        for (int i = 0; i < lengthI; i++)
+        {
+            Console.Write("[");
+            for (int j = 0; j < lengthJ; j++)
+            {
+                for (int k = 0; k < lengthK; k++)
+                {
+                    if (values[i, j, k].Max == 1)
+                        Console.Write(k + 1); 
+                }
+
+                Console.Write(", ");
+            }
+
+            Console.WriteLine("]");
         }
     }
 

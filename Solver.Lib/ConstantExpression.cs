@@ -9,25 +9,25 @@ public class ConstantExpression(int value) : Expression
 
     public int Value { get; } = value;
 
-    public override int GetMin(List<VariableType> variables) => Value;
+    public override int GetMin(IList<VariableType> variables) => Value;
 
-    public override int GetMax(List<VariableType> variables) => Value;
+    public override int GetMax(IList<VariableType> variables) => Value;
     
-    public override RestrictResult RestrictToMin(int minValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
     {
         return minValue <= Value
             ? RestrictResult.NoChange
             : RestrictResult.Infeasible;
     }
     
-    public override RestrictResult RestrictToMax(int maxValue, List<VariableType> variables)
+    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
     {
         return Value <= maxValue
             ? RestrictResult.NoChange
             : RestrictResult.Infeasible;
     }
 
-    public override RestrictResult Exclude(int value, List<VariableType> variables)
+    public override RestrictResult Exclude(int value, IList<VariableType> variables)
     {
         return value == Value
             ? RestrictResult.Infeasible

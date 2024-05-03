@@ -19,7 +19,7 @@ public class DistinctConstraint : IConstraint
         }
     }
     
-    public RestrictResult Restrict(List<VariableType> variables)
+    public RestrictResult Restrict(IList<VariableType> variables)
     {
         var result = RestrictResult.NoChange;
         
@@ -45,7 +45,7 @@ public class DistinctConstraint : IConstraint
         return result;
     }
 
-    public int Range(List<VariableType> variables)
+    public int Range(IList<VariableType> variables)
     {
         return _variableIndices.Sum(i => variables[i].Max - variables[i].Min);
     }
