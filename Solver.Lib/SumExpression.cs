@@ -4,105 +4,130 @@ namespace Solver.Lib;
 
 public sealed class SumExpression : Expression
 {
-    internal readonly Expression[] Elements;
+    private readonly SortedList<int, int> _variables;
+    private readonly int _constant;
 
-    private SumExpression(Expression[] elements)
+    public override int Constant => _constant;
+
+    public SumExpression(Expression expression, Expression addition, int scale)
     {
-        Elements = elements;
+        _variables = new SortedList<int, int>();
+        AddVariables(expression, 1, ref _constant);
+        AddVariables(addition, scale, ref _constant);
     }
 
-    public static Expression Create(Expression element)
+    public SumExpression(Expression expression, Variable variable, int scale)
     {
-        return element;
+        _variables = new SortedList<int, int> { { variable.Index, scale } };
+        AddVariables(expression, 1, ref _constant);
     }
 
-    public static Expression Create(Expression first, Expression second)
+    public SumExpression(params Variable[] variables)
     {
-        return new Add2Expression(first, second);
+        _variables = new SortedList<int, int>();
+        foreach (var v in variables) 
+            AddVariable(v.Index, 1);
     }
 
-    public static Expression Create(Expression first, Expression second, Expression third)
+    private SumExpression(SumExpression source, int constant)
     {
-        return new SumExpression([first, second, third]);
+        _variables = new SortedList<int, int>(source._variables);
+        _constant = source._constant + constant;
     }
 
-    public static Expression Create(Expression first, Expression second, Expression third, Expression fourth)
+    private SumExpression(SumExpression source, Expression addition, int scale)
     {
-        return new SumExpression([first, second, third, fourth]);
+        _variables = new SortedList<int, int>(source._variables);
+        _constant = source._constant;
+        
+        AddVariables(addition, scale, ref _constant);
     }
 
-    public static Expression Create<TExpression>(params TExpression[] elements) where TExpression : Expression
+    private SumExpression(SumExpression source, Variable addition, int scale)
     {
-        return elements.Length switch
+        _variables = new SortedList<int, int>(source._variables);
+        _constant = source._constant;
+        
+        AddVariable(addition.Index, scale);
+    }
+
+    private void AddVariables(Expression expression, int scale, ref int constant)
+    {
+        constant += scale * expression.Constant;
+        
+        foreach (var (i, s) in expression.GetVariables()) 
+            AddVariable(i, scale * s);
+    }
+
+    private void AddVariable(int index, int scale)
+    {
+        var i = _variables.IndexOfKey(index);
+
+        if (i == -1)
+            _variables[index] = scale;
+        else
+            _variables.SetValueAtIndex(i, _variables.GetValueAtIndex(i) + scale);
+    }
+
+    public static Expression Create()
+    {
+        return new ConstantExpression(0);
+    }
+
+    public static Expression Create(Variable variable)
+    {
+        return new Add1Expression(variable.Index, 1, 0);
+    }
+
+    public static Expression Create(Variable variable1, Variable variable2)
+    {
+        if (variable1.Index == variable2.Index)
+            return new Add1Expression(variable1.Index, 2, 0);
+
+        return new Add2Expression(variable1.Index, 1, variable2.Index, 1, 0);
+    }
+
+    public static Expression Create(params Variable[] variables)
+    {
+        return variables.Length switch
         {
             0 => new ConstantExpression(0),
-            1 => elements[0],
-            2 => new Add2Expression(elements[0], elements[1]),
-            _ => new SumExpression(elements)
+            1 => new Add1Expression(variables[0].Index, 1, 0),
+            2 => Create(variables[0], variables[1]),
+            _ => new SumExpression(variables)
         };
     }
 
-    public override SumExpression Add(Expression addition)
+    public override SumExpression Add(Expression addition, int scale)
     {
-        if (addition is SumExpression sum)
-        {
-            var elements = new Expression[Elements.Length + sum.Elements.Length];
-            Array.Copy(Elements, elements, Elements.Length);
-            Array.Copy(sum.Elements, 0, elements, Elements.Length, sum.Elements.Length);
-            return new SumExpression(elements);
-        }
-        else if (addition is Add2Expression add)
-        {
-            var elements = new Expression[Elements.Length + 2];
-            Array.Copy(Elements, elements, Elements.Length);
-            elements[^2] = add.First;
-            elements[^1] = add.Second;
-            return new SumExpression(elements);
-            
-        }
-        else
-        {
-            var elements = new Expression[Elements.Length + 1];
-            Array.Copy(Elements, elements, Elements.Length);
-            elements[Elements.Length] = addition;
-            return new SumExpression(elements);
-        }
+        return new SumExpression(this, addition, scale);
     }
 
     public override SumExpression Add(int addition)
     {
-        for (int i = 0; i < Elements.Length; i++)
-        {
-            if (Elements[i] is ConstantExpression ce)
-            {
-                var elements = new Expression[Elements.Length];
-                Array.Copy(Elements, elements, Elements.Length);
-                elements[i] = new ConstantExpression(ce.Value + addition);
-                return new SumExpression(elements);
-            }
-        }
-
-        {
-            var elements = new Expression[Elements.Length + 1];
-            Array.Copy(Elements, elements, Elements.Length);
-            elements[Elements.Length] = new ConstantExpression(addition);
-            return new SumExpression(elements);
-        }
+        return new SumExpression(this, addition);
     }
 
-    public override int GetMin(IList<VariableType> variables) => Elements.Sum(e => e.GetMin(variables));
+    public override Expression Add(Variable addition, int scale)
+    {
+        return new SumExpression(this, addition, scale);
+    }
 
-    public override int GetMax(IList<VariableType> variables) => Elements.Sum(e => e.GetMax(variables));
-    
+    public override int GetMin(IList<VariableType> variables)
+    {
+        return Constant + _variables.Sum(pair => variables[pair.Key].GetMin(pair.Value));
+    }
+
+    public override int GetMax(IList<VariableType> variables)
+    {
+        return Constant + _variables.Sum(pair => variables[pair.Key].GetMax(pair.Value));
+    }
+
     public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
     {
-        var maxValues = new int[Elements.Length];
-        int maxSum = 0;
-        for (int i = 0; i < Elements.Length; i++)
-        {
-            maxValues[i] = Elements[i].GetMax(variables);
-            maxSum += maxValues[i];
-        }
+        int maxSum = Constant;
+        foreach(var (index, scale) in _variables) 
+            maxSum += variables[index].GetMax(scale);
 
         if (maxSum < minValue)
             return RestrictResult.Infeasible;
@@ -110,9 +135,19 @@ public sealed class SumExpression : Expression
         var diff = maxSum - minValue;
 
         var result = RestrictResult.NoChange;
-        for (int i = 0; i < Elements.Length; i++)
+        foreach(var (index, scale) in _variables)
         {
-            var elResult = Elements[i].RestrictToMin(maxValues[i] - diff, variables);
+            if (scale == 0)
+                continue;
+            
+            var variable = variables[index];
+            var elDiff = diff / scale;
+
+            // note that ellDiff will be negative when scale is negative
+            var elResult = scale > 0
+                ? Variable.RestrictToMin(index, variable.Max - elDiff, variables)
+                : Variable.RestrictToMax(index, variable.Min - elDiff, variables);
+            
             if (elResult == RestrictResult.Infeasible)
             {
                 // it should always be possible to set a lower minimum bound than the max possible value!
@@ -129,13 +164,9 @@ public sealed class SumExpression : Expression
 
     public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
     {
-        var minValues = new int[Elements.Length];
-        int minSum = 0;
-        for (int i = 0; i < Elements.Length; i++)
-        {
-            minValues[i] = Elements[i].GetMin(variables);
-            minSum += minValues[i];
-        }
+        int minSum = Constant;
+        foreach(var (index, scale) in _variables) 
+            minSum += variables[index].GetMin(scale);
 
         if (maxValue < minSum)
             return RestrictResult.Infeasible;
@@ -143,9 +174,19 @@ public sealed class SumExpression : Expression
         var diff = maxValue - minSum;
 
         var result = RestrictResult.NoChange;
-        for (int i = 0; i < Elements.Length; i++)
+        foreach(var (index, scale) in _variables)
         {
-            var elResult = Elements[i].RestrictToMax(minValues[i] + diff, variables);
+            if (scale == 0)
+                continue;
+            
+            var variable = variables[index];
+            var elDiff = diff / scale;
+
+            // note that elDiff will be negative when scale is negative
+            var elResult = scale > 0
+                ? Variable.RestrictToMax(index, variable.Min + elDiff, variables)
+                : Variable.RestrictToMin(index, variable.Max + elDiff, variables);
+            
             if (elResult == RestrictResult.Infeasible)
             {
                 // it should always be possible to set a higher maximum bound than the min possible value!
@@ -162,6 +203,11 @@ public sealed class SumExpression : Expression
 
     public override IEnumerable<int> GetVariableIndices()
     {
-        return Elements.SelectMany(e => e.GetVariableIndices());
+        return _variables.Keys;
+    }
+
+    public override IEnumerable<KeyValuePair<int, int>> GetVariables()
+    {
+        return _variables;
     }
 }

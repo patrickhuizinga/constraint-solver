@@ -1,65 +1,110 @@
 namespace Solver.Lib;
 
-public class Variable(int index) : Expression
+// == and != operators are *not* boolean, therefor overriding Equals and GetHashcode isn't needed
+#pragma warning disable CS0660, CS0661
+public readonly struct Variable(int index)
 {
     public int Index { get; } = index;
-
-    public override int GetMin(IList<VariableType> variables) => GetMin(Index, variables);
-
-    public override int GetMax(IList<VariableType> variables) => GetMax(Index, variables);
-
-    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
-    {
-        return RestrictToMin(Index, minValue, variables);
-    }
-
-    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
-    {
-        return RestrictToMax(Index, maxValue, variables);
-    }
-
-    public static int GetMin(int index, IList<VariableType> variables) => variables[index].Min;
-
-    public static int GetMax(int index, IList<VariableType> variables) => variables[index].Max;
 
     public static RestrictResult RestrictToMin(int index, int minValue, IList<VariableType> variables)
     {
         var oldVal = variables[index];
-        var newVal = oldVal.TryRestrictToMin(minValue);
-        if (newVal == null)
-            return RestrictResult.Infeasible;
-        if (newVal == oldVal)
-            return RestrictResult.NoChange;
 
-        variables[index] = newVal;
-        return RestrictResult.Change;
+        if (minValue <= oldVal.Min)
+        {
+            return RestrictResult.NoChange;
+        }
+        
+        if (minValue <= oldVal.Max)
+        {
+            variables[index] = oldVal with { Min = minValue };
+            return RestrictResult.Change;
+        }
+
+        return RestrictResult.Infeasible;
     }
 
     public static RestrictResult RestrictToMax(int index, int maxValue, IList<VariableType> variables)
     {
         var oldVal = variables[index];
-        var newVal = oldVal.TryRestrictToMax(maxValue);
-        if (ReferenceEquals(newVal, null))
-            return RestrictResult.Infeasible;
-        if (ReferenceEquals(newVal, oldVal))
+        if (oldVal.Max <= maxValue)
+        {
             return RestrictResult.NoChange;
+        }
 
-        variables[index] = newVal;
-        return RestrictResult.Change;
+        if (oldVal.Min <= maxValue)
+        {
+            variables[index] = oldVal with { Max = maxValue };
+            return RestrictResult.Change;
+        }
+
+        return RestrictResult.Infeasible;
     }
 
     public static RestrictResult Exclude(int index, int value, IList<VariableType> variables)
     {
         var oldVal = variables[index];
-        var newVal = oldVal.TryExclude(value);
-        if (ReferenceEquals(newVal, null))
-            return RestrictResult.Infeasible;
-        if (ReferenceEquals(newVal, oldVal))
-            return RestrictResult.NoChange;
+        
+        if (oldVal.TryGetConstant(out int val))
+            return val == value ? RestrictResult.Infeasible : RestrictResult.NoChange;
+        
+        if (value == oldVal.Min)
+        {   
+            variables[index] = oldVal with { Min = value + 1 };
+            return RestrictResult.Change;
+        }
 
-        variables[index] = newVal;
-        return RestrictResult.Change;
+        if (value == oldVal.Max)
+        {
+            variables[index] = oldVal with { Max = value - 1 };
+            return RestrictResult.Change;
+        }
+
+        return RestrictResult.NoChange;
     }
 
-    public override IEnumerable<int> GetVariableIndices() => new[] { Index };
+    public static Expression operator +(Variable left, Variable right)
+    {
+        return SumExpression.Create(left, right);
+    }
+
+    public static Expression operator +(Variable left, int right)
+    {
+        return new Add1Expression(left.Index, 1, right);
+    }
+
+    public static Expression operator -(Variable left, int right)
+    {
+        return new Add1Expression(left.Index, 1, -right);
+    }
+
+    public static IConstraint operator <=(Variable left, Variable right)
+    {
+        return ComparisonConstraint.Create(left, Comparison.LessEqual, right);
+    }
+
+    public static IConstraint operator >=(Variable left, Variable right)
+    {
+        return ComparisonConstraint.Create(left, Comparison.GreaterEqual, right);
+    }
+
+    public static IConstraint operator ==(Variable left, Variable right)
+    {
+        return new EqualityConstraint(left, right);
+    }
+
+    public static IConstraint operator !=(Variable left, Variable right)
+    {
+        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
+    }
+
+    public static IConstraint operator ==(Variable left, int right)
+    {
+        return new EqualityConstraint(left, right);
+    }
+
+    public static IConstraint operator !=(Variable left, int right)
+    {
+        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
+    }
 }

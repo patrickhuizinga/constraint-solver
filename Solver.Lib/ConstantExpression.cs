@@ -2,12 +2,39 @@ namespace Solver.Lib;
 
 public class ConstantExpression(int value) : Expression
 {
+    public override Expression Add(Expression addition, int scale)
+    {
+        switch (addition)
+        {
+            case ConstantExpression:
+                return new ConstantExpression(Value + scale * addition.Constant);
+            case Add1Expression add1:
+                return new Add1Expression(
+                    add1.VariableIndex, scale * add1.Scale, 
+                    add1.Constant + Value);
+            case Add2Expression add2:
+                return new Add2Expression(
+                    add2.FirstVariableIndex, scale * add2.FirstScale,
+                    add2.SecondVariableIndex, scale * add2.SecondScale,
+                    add2.Constant + Value);
+            default:
+                return new SumExpression(this, addition, scale);
+        }
+    }
+
     public override Expression Add(int addition)
     {
         return new ConstantExpression(Value + addition);
     }
 
+    public override Expression Add(Variable addition, int scale)
+    {
+        return new Add1Expression(addition.Index, scale, Value);
+    }
+
     public int Value { get; } = value;
+
+    public override int Constant => Value;
 
     public override int GetMin(IList<VariableType> variables) => Value;
 
@@ -28,6 +55,7 @@ public class ConstantExpression(int value) : Expression
     }
 
     public override IEnumerable<int> GetVariableIndices() => Enumerable.Empty<int>();
+    public override IEnumerable<KeyValuePair<int, int>> GetVariables() => Enumerable.Empty<KeyValuePair<int, int>>();
 
     public override string ToString()
     {

@@ -4,76 +4,153 @@ namespace Solver.Lib;
 
 public sealed class Add2Expression : Expression
 {
-    public Expression First { get; }
-    public Expression Second { get; }
+    public int FirstVariableIndex { get; }
+    public int FirstScale { get; }
+    public int SecondVariableIndex { get; }
+    public int SecondScale { get; }
 
-    public Add2Expression(Expression first, Expression second)
+    public override int Constant { get; }
+
+    public Add2Expression(int firstVariableIndex, int firstScale, int secondVariableIndex, int secondScale, int constant)
     {
-        First = first;
-        Second = second;
+        FirstVariableIndex = firstVariableIndex;
+        FirstScale = firstScale;
+        SecondVariableIndex = secondVariableIndex;
+        SecondScale = secondScale;
+        Constant = constant;
     }
 
-    public override Expression Add(Expression addition)
+    public override Expression Add(Expression addition, int scale)
     {
         switch (addition)
         {
-            case SumExpression sum:
-                var elements = new Expression[2 + sum.Elements.Length];
-                elements[0] = First;
-                elements[1] = Second;
-                Array.Copy(sum.Elements, 0, elements, 2, sum.Elements.Length);
-                return SumExpression.Create(elements);
-            case Add2Expression add:
-                return SumExpression.Create(First, Second, add.First, add.Second);
             case ConstantExpression cv:
-                return Add(cv.Value);
+                return Add(scale * cv.Value);
+            
+            case Add1Expression add1:
+                if (add1.VariableIndex == FirstVariableIndex)
+                {
+                    return new Add2Expression(
+                        FirstVariableIndex, 
+                        FirstScale + scale * add1.Scale,
+                        SecondVariableIndex,
+                        SecondScale,
+                        Constant + scale * add1.Constant);
+                }
+                if (add1.VariableIndex == SecondVariableIndex)
+                {
+                    return new Add2Expression(
+                        FirstVariableIndex,
+                        FirstScale,
+                        SecondVariableIndex,
+                        SecondScale + scale * add1.Scale,
+                        Constant + scale * add1.Constant);
+                }
+
+                goto default;
+            case Add2Expression add2:
+                if (add2.FirstVariableIndex == FirstVariableIndex && add2.SecondVariableIndex == SecondVariableIndex)
+                {
+                    return new Add2Expression(
+                        FirstVariableIndex,
+                        FirstScale + scale * add2.FirstScale,
+                        SecondVariableIndex,
+                        SecondScale + scale * add2.SecondScale,
+                        Constant + scale * add2.Constant);
+                }
+                if (add2.SecondVariableIndex == FirstVariableIndex && add2.FirstVariableIndex == SecondVariableIndex)
+                {
+                    return new Add2Expression(
+                        FirstVariableIndex,
+                        FirstScale + scale * add2.SecondScale,
+                        SecondVariableIndex,
+                        SecondScale + scale * add2.FirstScale,
+                        Constant + scale * add2.Constant);
+                }
+                
+                goto default;
             default:
-                return SumExpression.Create(First, Second, addition);
+                return new SumExpression(this, addition, scale);
         }
     }
 
     public override Expression Add(int addition)
     {
-        if (First is ConstantExpression cv1)
-        {
-            return new Add2Expression(new ConstantExpression(cv1.Value + addition), Second);
-        }
+        return new Add2Expression(
+            FirstVariableIndex, FirstScale,
+            SecondVariableIndex, SecondScale,
+            Constant + addition);
+    }
 
-        if (Second is ConstantExpression cv2)
+    public override Expression Add(Variable addition, int scale)
+    {
+        if (addition.Index == FirstVariableIndex)
         {
-            return new Add2Expression(First, new ConstantExpression(cv2.Value + addition));
+            return new Add2Expression(FirstVariableIndex, FirstScale + scale, SecondVariableIndex, SecondScale, Constant);
         }
-
-        return SumExpression.Create(First, Second, addition);
+        if (addition.Index == SecondVariableIndex)
+        {
+            return new Add2Expression(FirstVariableIndex, FirstScale, SecondVariableIndex, SecondScale + scale, Constant);
+        }
+    
+        return new SumExpression(this, addition, scale);
     }
 
     public override int GetMin(IList<VariableType> variables) =>
-        First.GetMin(variables) + Second.GetMin(variables);
+        Constant + variables[FirstVariableIndex].GetMin(FirstScale) + variables[SecondVariableIndex].GetMin(SecondScale);
 
     public override int GetMax(IList<VariableType> variables) =>
-        First.GetMax(variables) + Second.GetMax(variables);
+        Constant + variables[FirstVariableIndex].GetMax(FirstScale) + variables[SecondVariableIndex].GetMax(SecondScale);
 
     public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
     {
-        int firstMax = First.GetMax(variables);
-        int secondMax = Second.GetMax(variables);
-        int maxSum = firstMax + secondMax;
+        int firstMax = variables[FirstVariableIndex].GetMax(FirstScale);
+        int secondMax = variables[SecondVariableIndex].GetMax(SecondScale);
+        int maxSum = Constant + firstMax + secondMax;
 
         if (maxSum < minValue)
             return RestrictResult.Infeasible;
 
-        var diff = maxSum - minValue;
-
-        var firstResult = First.RestrictToMin(firstMax - diff, variables);
-        if (firstResult == RestrictResult.Infeasible)
+        RestrictResult firstResult;
+        switch (FirstScale)
         {
-            // it should always be possible to set a lower minimum bound than the max possible value!
-            Debugger.Break();
-            return RestrictResult.Infeasible;
+            case 0:
+                firstResult = RestrictResult.NoChange;
+                break;
+            case > 0:
+            {
+                var elMinValue = (minValue - Constant - secondMax) / FirstScale;
+                firstResult = Variable.RestrictToMin(FirstVariableIndex, elMinValue, variables);
+                break;
+            }
+            default:
+            {
+                var elMaxValue = (minValue - Constant - secondMax) / FirstScale;
+                firstResult = Variable.RestrictToMax(FirstVariableIndex, elMaxValue, variables);
+                break;
+            }
         }
 
-        var secondResult = Second.RestrictToMin(secondMax - diff, variables);
-        if (secondResult == RestrictResult.Infeasible)
+        RestrictResult secondResult;
+        switch (SecondScale)
+        {
+            case 0:
+                return firstResult;
+            case > 0:
+            {
+                var elMinValue = (minValue - Constant - firstMax) / SecondScale;
+                secondResult = Variable.RestrictToMin(SecondVariableIndex, elMinValue, variables);
+                break;
+            }
+            default:
+            {
+                var elMaxValue = (minValue - Constant - firstMax) / SecondScale;
+                secondResult = Variable.RestrictToMax(SecondVariableIndex, elMaxValue, variables);
+                break;
+            }
+        }
+
+        if (firstResult == RestrictResult.Infeasible || secondResult == RestrictResult.Infeasible)
         {
             // it should always be possible to set a lower minimum bound than the max possible value!
             Debugger.Break();
@@ -85,27 +162,55 @@ public sealed class Add2Expression : Expression
 
     public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
     {
-        int firstMin = First.GetMin(variables);
-        int secondMin = Second.GetMin(variables);
-        int minSum = firstMin + secondMin;
+        int firstMin = variables[FirstVariableIndex].GetMin(FirstScale);
+        int secondMin = variables[SecondVariableIndex].GetMin(SecondScale);
+        int minSum = Constant + firstMin + secondMin;
 
         if (maxValue < minSum)
             return RestrictResult.Infeasible;
 
-        var diff = maxValue - minSum;
-
-        var firstResult = First.RestrictToMax(firstMin + diff, variables);
-        if (firstResult == RestrictResult.Infeasible)
+        RestrictResult firstResult;
+        switch (FirstScale)
         {
-            // it should always be possible to set a higher maximum bound than the min possible value!
-            Debugger.Break();
-            return RestrictResult.Infeasible;
+            case 0:
+                firstResult = RestrictResult.NoChange;
+                break;
+            case > 0:
+            {
+                var elMaxValue = (maxValue - Constant - secondMin) / FirstScale;
+                firstResult = Variable.RestrictToMax(FirstVariableIndex, elMaxValue, variables);
+                break;
+            }
+            default:
+            {
+                var elMinValue = (maxValue - Constant - secondMin) / FirstScale;
+                firstResult = Variable.RestrictToMin(FirstVariableIndex, elMinValue, variables);
+                break;
+            }
         }
 
-        var secondResult = Second.RestrictToMax(secondMin + diff, variables);
-        if (secondResult == RestrictResult.Infeasible)
+        RestrictResult secondResult;
+        switch (SecondScale)
         {
-            // it should always be possible to set a higher maximum bound than the min possible value!
+            case 0:
+                return firstResult;
+            case > 0:
+            {
+                var elMaxValue = (maxValue - Constant - firstMin) / SecondScale;
+                secondResult = Variable.RestrictToMax(SecondVariableIndex, elMaxValue, variables);
+                break;
+            }
+            default:
+            {
+                var elMinValue = (maxValue - Constant - firstMin) / SecondScale;
+                secondResult = Variable.RestrictToMin(SecondVariableIndex, elMinValue, variables);
+                break;
+            }
+        }
+
+        if (firstResult == RestrictResult.Infeasible || secondResult == RestrictResult.Infeasible)
+        {
+            // it should always be possible to set a lower maximum bound than the min possible value!
             Debugger.Break();
             return RestrictResult.Infeasible;
         }
@@ -115,8 +220,14 @@ public sealed class Add2Expression : Expression
 
     public override IEnumerable<int> GetVariableIndices()
     {
-        return Enumerable.Concat(
-            First.GetVariableIndices(),
-            Second.GetVariableIndices());
+        yield return FirstVariableIndex;
+        yield return SecondVariableIndex;
+    }
+
+    public override IEnumerable<KeyValuePair<int, int>> GetVariables()
+    {
+        yield return KeyValuePair.Create(FirstVariableIndex, FirstScale);
+        yield return KeyValuePair.Create(SecondVariableIndex, SecondScale);
+        
     }
 }

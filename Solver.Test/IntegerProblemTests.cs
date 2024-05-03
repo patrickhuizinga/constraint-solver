@@ -10,7 +10,7 @@ public class IntegerProblemTests
         var problem = new IntegerProblem();
         var bin = problem.AddBinaryVariables(2);
         var sum = SumExpression.Create(bin);
-        problem.AddConstraint(sum, Comparison.Equals, 1);
+        problem.AddConstraint(new EqualityConstraint(sum, 1));
 
         var result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));

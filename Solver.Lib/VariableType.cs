@@ -1,6 +1,6 @@
 namespace Solver.Lib;
 
-public record VariableType(int Min, int Max)
+public readonly record struct VariableType(int Min, int Max)
 {
     public static readonly VariableType Zero = new(0, 0);
     public static readonly VariableType One = new(1, 1);
@@ -13,6 +13,10 @@ public record VariableType(int Min, int Max)
     
     public static VariableType Constant(bool value) => value ? True : False;
 
+    public static VariableType Range(int min, int max) => new(min, max);
+
+    public static VariableType Range(Range range) => new(range.Start.Value, range.End.Value);
+
 
     public bool IsConstant => Min == Max;
 
@@ -22,35 +26,14 @@ public record VariableType(int Min, int Max)
         return value == Max;
     }
 
-    public VariableType? TryRestrictToMin(int minValue)
+    public int GetMin(int scale)
     {
-        if (minValue <= Min)
-            return this;
-        if (minValue <= Max)
-            return this with { Min = minValue };
-
-        return null;
+        return scale > 0 ? scale * Min : scale * Max;
     }
 
-    public VariableType? TryRestrictToMax(int maxValue)
+    public int GetMax(int scale)
     {
-        if (Max <= maxValue)
-            return this;
-        if (Min <= maxValue)
-            return this with { Max = maxValue };
-
-        return null;
-    }
-
-    public VariableType TryExclude(int value)
-    {
-        if (value == Min)
-            return this with { Min = value + 1 };
-
-        if (value == Max)
-            return this with { Max = value - 1 };
-
-        return this;    
+        return scale > 0 ? scale * Max : scale * Min;
     }
 
     public override string ToString()

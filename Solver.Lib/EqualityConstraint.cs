@@ -6,7 +6,7 @@ public class EqualityConstraint : IConstraint
 {
     private readonly SortedList<int, int> _left;
     private readonly int _right;
-
+    
     public EqualityConstraint(Expression left, int right)
     {
         _right = right;
@@ -29,6 +29,22 @@ public class EqualityConstraint : IConstraint
         }
     }
 
+    public EqualityConstraint(Variable left, int right)
+    {
+        _right = right;
+        _left = new SortedList<int, int> { { left.Index, 1 } };
+    }
+
+    public EqualityConstraint(Variable left, Variable right)
+    {
+        _right = 0;
+        _left = new SortedList<int, int>();
+        if (left.Index == right.Index)
+            return;
+
+        _left = new SortedList<int, int> { { left.Index, 1 }, { right.Index, -1 } };
+    }
+
     public EqualityConstraint(EqualityConstraint source)
     {
         _right = source._right;
@@ -37,54 +53,49 @@ public class EqualityConstraint : IConstraint
 
     private void AddVariables(Expression expression, int sign, ref int right)
     {
+        right -= sign * expression.Constant;
+        
         switch (expression)
         {
-            case Add2Expression add:
-                AddVariables(add.First, sign, ref right);
-                AddVariables(add.Second, sign, ref right);
+            case ConstantExpression:
                 break;
-            case ConstantExpression constant:
-                right -= sign * constant.Value;
+            case Add1Expression add1:
+                AddVariable(add1.VariableIndex, add1.Scale);
+                break;
+            case Add2Expression add2:
+                AddVariable(add2.FirstVariableIndex, add2.FirstScale);
+                AddVariable(add2.SecondVariableIndex, add2.SecondScale);
                 break;
             case SumExpression sum:
-                foreach (var child in sum.Elements) 
-                    AddVariables(child, sign, ref right);
-                break;
-            case Variable variable:
-                if (_left.TryGetValue(variable.Index, out int scale))
-                    _left[variable.Index] = scale + sign;
-                else
-                    _left[variable.Index] = sign;
-                
+                foreach (var (index, scale) in sum.GetVariables())
+                    AddVariable(index, scale);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(expression), expression, "Unsupported type of expression");
         }
     }
 
+    private void AddVariable(int index, int scale)
+    {
+        var i = _left.IndexOfKey(index);
+
+        if (i == -1)
+            _left[index] = scale;
+        else
+            _left.SetValueAtIndex(i, _left.GetValueAtIndex(i) + scale);
+    }
+
     public RestrictResult Restrict(IList<VariableType> variables)
     {
         int minSum = 0;
         int maxSum = 0;
-        for (int i = _left.Count - 1; i >= 0; i--)
+        foreach(var (index, scale) in _left)
         {
-            var scale = _left.GetValueAtIndex(i);
-            if (scale == 0)
-                continue;
-
-            var index = _left.GetKeyAtIndex(i);
+            if (scale == 0) continue;
+            
             var variable = variables[index];
-            if (scale > 0)
-            {
-                minSum += scale * variable.Min;
-                maxSum += scale * variable.Max;
-            }
-            else
-            {
-                // note: flipped min and max
-                minSum -= scale * variable.Max;
-                maxSum -= scale * variable.Min;
-            }
+            minSum += variable.GetMin(scale);
+            maxSum += variable.GetMax(scale);
         }
 
         if (_right < minSum || maxSum < _right)
@@ -96,20 +107,18 @@ public class EqualityConstraint : IConstraint
         var maxDiff = maxSum - _right;
 
         var result = RestrictResult.NoChange;
-        for (int i = 0; i < _left.Count; i++)
+        foreach(var (index, scale) in _left)
         {
-            var scale = _left.GetValueAtIndex(i);
             if (scale == 0) continue;
             
-            var index = _left.GetKeyAtIndex(i);
             int elMinDiff, elMaxDiff;
             switch (scale)
             {
-                case >= 1:
+                case > 0:
                     elMinDiff = minDiff / scale;
                     elMaxDiff = maxDiff / scale;
                     break;
-                case <= -1:
+                case < 0:
                     // note: flipped min and max
                     elMinDiff = maxDiff / -scale;
                     elMaxDiff = minDiff / -scale;

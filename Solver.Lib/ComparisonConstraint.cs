@@ -16,9 +16,7 @@ public class ComparisonConstraint : IConstraint
     public static IConstraint Create(Expression left, Comparison comparison, Expression right)
     {
         if (comparison == Comparison.Equals)
-        {
             return new EqualityConstraint(left, right);
-        }
 
         return new ComparisonConstraint(left, comparison, right);
     }

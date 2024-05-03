@@ -403,7 +403,7 @@ public class SudokuTests
         }
     }
 
-    private static Expression[,] Sum<TExpression>(TExpression[,,] expressions, int dimension) where TExpression : Expression
+    private static Expression[,] Sum(Variable[,,] expressions, int dimension)
     {
         var countI = expressions.GetLength(0);
         var countJ = expressions.GetLength(1);
@@ -418,8 +418,8 @@ public class SudokuTests
                 for (int j = 0; j < countJ; j++)
                 for (int k = 0; k < countK; k++)
                 {
-                    var parts = new Expression[countI];
-                    for (int i = 0; i < countI; i++)
+                    var parts = new Variable[countI];
+                    for (int i = 0; i < countI; i++) 
                         parts[i] = expressions[i, j, k];
 
                     result[j, k] = SumExpression.Create(parts);
@@ -431,7 +431,7 @@ public class SudokuTests
                 for (int i = 0; i < countI; i++)
                 for (int k = 0; k < countK; k++)
                 {
-                    var parts = new Expression[countJ];
+                    var parts = new Variable[countJ];
                     for (int j = 0; j < countJ; j++)
                         parts[j] = expressions[i, j, k];
 
@@ -444,7 +444,7 @@ public class SudokuTests
                 for (int i = 0; i < countI; i++)
                 for (int j = 0; j < countJ; j++)
                 {
-                    var parts = new Expression[countK];
+                    var parts = new Variable[countK];
                     for (int k = 0; k < countK; k++)
                         parts[k] = expressions[i, j, k];
 
@@ -457,7 +457,7 @@ public class SudokuTests
         }
     }
 
-    private static Expression[,] SumBlocks<TExpression>(TExpression[,,] expressions, int size) where TExpression : Expression
+    private static Expression[,] SumBlocks(Variable[,,] expressions, int size)
     {
         var countK = size * size;
 
@@ -467,7 +467,7 @@ public class SudokuTests
         for (int bj = 0; bj < size; bj++)
         for (int k = 0; k < countK; k++)
         {
-            var parts = new Expression[countK];
+            var parts = new Variable[countK];
             for (int i = 0; i < size; i++)
             for (int j = 0; j < size; j++)
                 parts[i * size + j] = expressions[bi * size + i, bj * size + j, k];
