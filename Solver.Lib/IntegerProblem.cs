@@ -6,7 +6,7 @@ public class IntegerProblem
     private readonly List<IConstraint> _constraints;
     private readonly List<List<int>> _variableToConstraint;
 
-    public Expression Objective { get; set; }
+    public DoubleExpression Objective { get; set; }
 
     public bool IsInfeasible { get; private set; }
 
@@ -90,7 +90,7 @@ public class IntegerProblem
         .Select((v, i) => v.IsConstant || _variableToConstraint[i].IsEmpty())
         .All(b => b);
 
-    public int GetObjectiveValue() => Objective.GetMin(_variables);
+    public double GetObjectiveValue() => Objective.GetMin(_variables);
 
     public Variable AddVariable(VariableType variable)
     {
@@ -314,10 +314,10 @@ public class IntegerProblem
         return bestIndex;
     }
 
-    private (int index, int score) GetSmallestObjectiveVariable()
+    private (int index, double score) GetSmallestObjectiveVariable()
     {
         int bestIndex = -1;
-        int bestScore = int.MaxValue;
+        double bestScore = double.MaxValue;
         foreach (var (index, scale) in Objective.GetVariables())
         {
             var variable = _variables[index];
@@ -341,8 +341,12 @@ public class IntegerProblem
     {
         foreach (var (index, scale) in Objective.GetVariables())
         {
-            if (_variableToConstraint[index].IsEmpty()) 
-                _variables[index] = _variables[index].GetMin(scale);
+            if (_variableToConstraint[index].IsEmpty())
+            {
+                _variables[index] = scale > 0
+                    ? _variables[index].Min
+                    : _variables[index].Max;
+            }
         }
         
         return Minimize(this);
@@ -351,12 +355,12 @@ public class IntegerProblem
     private static IntegerProblem Minimize(IntegerProblem problem)
     {
         var bestSolution = problem;
-        var bestObjective = int.MaxValue;
+        double bestObjective = double.MaxValue;
         
-        var pq = new PriorityQueue<IntegerProblem, int>();
+        var pq = new PriorityQueue<IntegerProblem, double>();
         pq.Enqueue(problem, problem.GetObjectiveValue());
         
-        while (pq.TryDequeue(out var attempt, out int possibleObjective))
+        while (pq.TryDequeue(out var attempt, out double possibleObjective))
         {
             if (bestObjective <= possibleObjective)
                 return bestSolution;

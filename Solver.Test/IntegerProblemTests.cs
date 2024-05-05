@@ -81,7 +81,7 @@ public class IntegerProblemTests
         var sum = SumExpression.Create(bin);
         problem.AddConstraint(sum == 1);
 
-        problem.Objective = 2 * bin[0] + 3 * bin[1];
+        problem.Objective = 2.0 * bin[0] + 3.0 * bin[1];
         var solution = problem.Minimize();
         Assert.That(solution.GetObjectiveValue(), Is.EqualTo(2));
 
@@ -98,9 +98,9 @@ public class IntegerProblemTests
         var sum = SumExpression.Create(bin);
         problem.AddConstraint(sum == max);
 
-        problem.Objective = -10 * max;
+        problem.Objective = -Double.Pi * max;
         for (int i = 0; i < bin.Length; i++) 
-            problem.Objective += i * bin[i];
+            problem.Objective += (i - 2.5) * bin[i];
         
         var solution = problem.Minimize();
         // Assert.That(solution.IsSolved, "Solved");

@@ -117,6 +117,22 @@ public readonly struct Variable(int index)
         return new Add1Expression(variable.Index, scale, 0);
     }
 
+    public static DoubleExpression operator *(Variable variable, double scale)
+    {
+        if (scale == 0)
+            return DoubleExpression.Zero;
+
+        return new SumDoubleExpression(variable, scale);
+    }
+
+    public static DoubleExpression operator *(double scale, Variable variable)
+    {
+        if (scale == 0)
+            return DoubleExpression.Zero;
+
+        return new SumDoubleExpression(variable, scale);
+    }
+
     public static IConstraint operator <=(Variable left, Variable right)
     {
         return new LessThanConstraint(left - right);

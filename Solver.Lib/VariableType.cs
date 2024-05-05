@@ -33,6 +33,16 @@ public readonly record struct VariableType(int Min, int Max)
         return scale > 0 ? scale * Min : scale * Max;
     }
 
+    public double GetMin(double scale)
+    {
+        return scale > 0 ? scale * Min : scale * Max;
+    }
+
+    public double GetMax(double scale)
+    {
+        return scale > 0 ? scale * Max : scale * Min;
+    }
+
     public int GetMax(int scale)
     {
         return scale > 0 ? scale * Max : scale * Min;
