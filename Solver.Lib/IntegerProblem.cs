@@ -2,19 +2,22 @@ namespace Solver.Lib;
 
 public class IntegerProblem
 {
-    private readonly List<VariableType> _variables;
+    private readonly VariableCollection _variables;
     private readonly List<IConstraint> _constraints;
+    private readonly List<List<int>> _variableToConstraint;
 
     public IntegerProblem()
     {
-        _variables = [1];
+        _variables = new VariableCollection();
         _constraints = [];
+        _variableToConstraint = [];
     }
 
     public IntegerProblem(IntegerProblem source)
     {
-        _variables = [..source._variables];
-        _constraints = [..source._constraints];
+        _variables = new VariableCollection(source._variables);
+        _constraints = source._constraints;
+        _variableToConstraint = source._variableToConstraint;
     }
 
     public VariableType this[Variable variable]
@@ -81,6 +84,7 @@ public class IntegerProblem
     {
         var index = _variables.Count;
         _variables.Add(variable);
+        _variableToConstraint.Add([]);
         return new Variable(index);
     }
 
@@ -108,7 +112,7 @@ public class IntegerProblem
     public Variable[,,] AddVariables(VariableType variable, int countI, int countJ, int countK)
     {
         var result = new Variable[countI, countJ, countK];
-        
+
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         for (int k = 0; k < countK; k++)
@@ -125,20 +129,22 @@ public class IntegerProblem
 
     public Variable[,] AddBinaryVariables(int countI, int countJ) => AddVariables(VariableType.Binary, countI, countJ);
 
-    public Variable[,,] AddBinaryVariables(int countI, int countJ, int countK) => AddVariables(VariableType.Binary, countI, countJ, countK);
+    public Variable[,,] AddBinaryVariables(int countI, int countJ, int countK) =>
+        AddVariables(VariableType.Binary, countI, countJ, countK);
 
-    public TConstraint AddConstraint<TConstraint>(TConstraint constraint) where TConstraint : IConstraint
+    public void AddConstraint(IConstraint constraint)
     {
+        int constraintIndex = _constraints.Count;
         _constraints.Add(constraint);
-        return constraint;
+
+        foreach (var index in constraint.GetVariableIndices())
+            _variableToConstraint[index].Add(constraintIndex);
     }
 
     public void AddConstraints(IEnumerable<IConstraint> constraints)
     {
         foreach (var constraint in constraints)
-        {
             AddConstraint(constraint);
-        }
     }
 
     public void AddConstraints<TConstraint>(TConstraint[,] constraints) where TConstraint : IConstraint
@@ -153,40 +159,32 @@ public class IntegerProblem
         }
     }
 
-    public IConstraint AddConstraint(Expression left, Comparison comparison, Expression right)
+    public void AddConstraint(Expression left, Comparison comparison, Expression right)
     {
-        return AddConstraint(
+        AddConstraint(
             Constraint.Create(left, comparison, right));
     }
 
-    public IConstraint[] AddConstraints<TExpression>(
+    public void AddConstraints<TExpression>(
         TExpression[] left, Comparison comparison, Expression right)
         where TExpression : Expression
     {
-        var result = new IConstraint[left.Length];
-        for (int i = 0; i < left.Length; i++)
-        {
-            result[i] = AddConstraint(left[i], comparison, right);
-        }
-
-        return result;
+        foreach (var leftItem in left) 
+            AddConstraint(leftItem, comparison, right);
     }
 
-    public IConstraint[,] AddConstraints<TExpression>(
+    public void AddConstraints<TExpression>(
         TExpression[,] left, Comparison comparison, Expression right)
         where TExpression : Expression
     {
         var countI = left.GetLength(0);
         var countJ = left.GetLength(1);
 
-        var result = new IConstraint[countI, countJ];
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
-            result[i, j] = AddConstraint(left[i, j], comparison, right);
+            AddConstraint(left[i, j], comparison, right);
         }
-
-        return result;
     }
 
     public RestrictResult Restrict()
@@ -215,16 +213,29 @@ public class IntegerProblem
     {
         var result = RestrictResult.NoChange;
 
-        foreach (var constraint in _constraints)
+        var modifiedVariables = _variables.GetModifications()
+            .Distinct()
+            .ToList();
+        _variables.ClearModifications();
+        var modifiedConstraints = modifiedVariables
+            .SelectMany(varIndex => _variableToConstraint[varIndex])
+            .Distinct();
+
+        if (modifiedVariables.Count == 0)
+        {
+            modifiedConstraints = Enumerable.Range(0, _constraints.Count);
+        }
+
+        foreach (var constraint in modifiedConstraints.Select(i => _constraints[i]))
         {
             var constraintResult = constraint.Restrict(_variables);
             if (constraintResult == RestrictResult.Infeasible)
                 return RestrictResult.Infeasible;
 
-            if (result == RestrictResult.NoChange)
-                result = constraintResult;
+            if (constraintResult == RestrictResult.Change)
+                result = RestrictResult.Change;
         }
-
+        
         return result;
     }
 
@@ -264,19 +275,19 @@ public class IntegerProblem
     {
         // By returning the variable with the least 'range', we have fewer options to consider
         // and thereby need fewer guesses to make progress.
-        
+
         int index = -1;
         int smallestDiff = int.MaxValue;
         for (int i = 0; i < _variables.Count; i++)
         {
             var variable = _variables[i];
             int diff = variable.Max - variable.Min;
-            
+
             if (diff <= 0 || smallestDiff <= diff) continue;
-            
+
             // can't get smaller than this
             if (diff == 1) return i;
-            
+
             smallestDiff = diff;
             index = i;
         }
