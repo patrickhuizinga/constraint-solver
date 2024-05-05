@@ -97,13 +97,13 @@ public sealed class Add1Expression : Expression
             Constant);
     }
 
-    public override int GetMin(IList<VariableType> variables) =>
+    public override int GetMin(VariableCollection variables) =>
         Constant + variables[VariableIndex].GetMin(Scale);
 
-    public override int GetMax(IList<VariableType> variables) =>
+    public override int GetMax(VariableCollection variables) =>
         Constant + variables[VariableIndex].GetMax(Scale);
 
-    public override RestrictResult RestrictToMaxZero(IList<VariableType> variables)
+    public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         return Scale switch
         {

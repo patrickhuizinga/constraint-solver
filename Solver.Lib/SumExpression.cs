@@ -125,17 +125,17 @@ public sealed class SumExpression : Expression
         return new SumExpression(this, addition, scale);
     }
 
-    public override int GetMin(IList<VariableType> variables)
+    public override int GetMin(VariableCollection variables)
     {
         return Constant + _variables.Sum(pair => variables[pair.Key].GetMin(pair.Value));
     }
 
-    public override int GetMax(IList<VariableType> variables)
+    public override int GetMax(VariableCollection variables)
     {
         return Constant + _variables.Sum(pair => variables[pair.Key].GetMax(pair.Value));
     }
 
-    public override RestrictResult RestrictToMaxZero(IList<VariableType> variables)
+    public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         int minSum = Constant;
         foreach(var (index, scale) in _variables) 

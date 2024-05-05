@@ -262,8 +262,7 @@ public class IntegerProblem
 
             if (clone.FindFeasible())
             {
-                _variables.Clear();
-                _variables.AddRange(clone._variables);
+                _variables.CopyFrom(clone._variables);
                 return true;
             }
         }

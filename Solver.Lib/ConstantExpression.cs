@@ -48,11 +48,11 @@ public class ConstantExpression(int value) : Expression
 
     public override int Constant => Value;
 
-    public override int GetMin(IList<VariableType> variables) => Value;
+    public override int GetMin(VariableCollection variables) => Value;
 
-    public override int GetMax(IList<VariableType> variables) => Value;
+    public override int GetMax(VariableCollection variables) => Value;
     
-    public override RestrictResult RestrictToMaxZero(IList<VariableType> variables)
+    public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         return Value <= 0
             ? RestrictResult.NoChange

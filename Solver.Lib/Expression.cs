@@ -24,10 +24,10 @@ public abstract class Expression :
     
     public abstract int Constant { get; }
     
-    public abstract int GetMin(IList<VariableType> variables);
-    public abstract int GetMax(IList<VariableType> variables);
+    public abstract int GetMin(VariableCollection variables);
+    public abstract int GetMax(VariableCollection variables);
     
-    public abstract RestrictResult RestrictToMaxZero(IList<VariableType> variables);
+    public abstract RestrictResult RestrictToMaxZero(VariableCollection variables);
 
     public abstract IEnumerable<int> GetVariableIndices();
     public abstract IEnumerable<KeyValuePair<int, int>> GetVariables();

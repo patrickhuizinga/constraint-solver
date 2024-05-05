@@ -14,7 +14,7 @@ public class NotEqualConstraint : IConstraint
         _expression = expression;
     }
 
-    public RestrictResult Restrict(IList<VariableType> variables)
+    public RestrictResult Restrict(VariableCollection variables)
     {
         // e!=0  <=>  e<0 or -e<0  <=>  e<=-1 or -e<=-1  <=>  1+e<=0 or 1-e<=0
         

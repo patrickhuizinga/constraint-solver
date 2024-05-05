@@ -6,7 +6,7 @@ public readonly struct Variable(int index)
 {
     public int Index { get; } = index;
 
-    public static RestrictResult RestrictToMin(int index, int minValue, IList<VariableType> variables)
+    public static RestrictResult RestrictToMin(int index, int minValue, VariableCollection variables)
     {
         var oldVal = variables[index];
 
@@ -24,7 +24,7 @@ public readonly struct Variable(int index)
         return RestrictResult.Infeasible;
     }
 
-    public static RestrictResult RestrictToMax(int index, int maxValue, IList<VariableType> variables)
+    public static RestrictResult RestrictToMax(int index, int maxValue, VariableCollection variables)
     {
         var oldVal = variables[index];
         if (oldVal.Max <= maxValue)
@@ -41,7 +41,7 @@ public readonly struct Variable(int index)
         return RestrictResult.Infeasible;
     }
 
-    public static RestrictResult Exclude(int index, int value, IList<VariableType> variables)
+    public static RestrictResult Exclude(int index, int value, VariableCollection variables)
     {
         var oldVal = variables[index];
         

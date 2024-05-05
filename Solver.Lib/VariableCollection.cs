@@ -2,88 +2,42 @@ using System.Collections;
 
 namespace Solver.Lib;
 
-public sealed class VariableCollection : IList<VariableType>
+public sealed class VariableCollection : IReadOnlyList<VariableType>
 {
-    private readonly List<VariableType> _items = [];
+    private readonly List<VariableType> _values = [];
     private readonly List<int> _modifiedIndices = [];
 
     public VariableCollection()
     {
     }
 
-    public VariableCollection(IEnumerable<VariableType> items)
+    public VariableCollection(VariableCollection items)
     {
-        _items.AddRange(items);
+        _values.AddRange(items._values);
     }
-        
-    public void AddRange(IEnumerable<VariableType> items)
+    
+    public VariableType this[int index]
     {
-        _items.AddRange(items);
-    }
-        
-    public IEnumerator<VariableType> GetEnumerator()
-    {
-        return _items.GetEnumerator();
+        get => _values[index];
+        set
+        {
+            _values[index] = value;
+            _modifiedIndices.Add(index);
+        }
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return ((IEnumerable)_items).GetEnumerator();
-    }
+    public int Count => _values.Count;
 
     public void Add(VariableType item)
     {
-        _items.Add(item);
+        _values.Add(item);
     }
 
-    public void Clear()
+    public void CopyFrom(VariableCollection source)
     {
-        _items.Clear();
+        _values.Clear();
+        _values.AddRange(source._values);
         _modifiedIndices.Clear();
-    }
-
-    public bool Contains(VariableType item)
-    {
-        return _items.Contains(item);
-    }
-
-    public void CopyTo(VariableType[] array, int arrayIndex)
-    {
-        _items.CopyTo(array, arrayIndex);
-    }
-
-    public bool Remove(VariableType item)
-    {
-        throw new NotSupportedException();
-    }
-
-    public int Count => _items.Count;
-
-    public bool IsReadOnly => false;
-
-    public int IndexOf(VariableType item)
-    {
-        return _items.IndexOf(item);
-    }
-
-    public void Insert(int index, VariableType item)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void RemoveAt(int index)
-    {
-        throw new NotSupportedException();
-    }
-
-    public VariableType this[int index]
-    {
-        get => _items[index];
-        set
-        {
-            _items[index] = value;
-            _modifiedIndices.Add(index);
-        }
     }
 
     public IEnumerable<int> GetModifications()
@@ -94,5 +48,15 @@ public sealed class VariableCollection : IList<VariableType>
     public void ClearModifications()
     {
         _modifiedIndices.Clear();
+    }
+        
+    public IEnumerator<VariableType> GetEnumerator()
+    {
+        return _values.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

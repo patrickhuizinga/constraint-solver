@@ -2,6 +2,6 @@ namespace Solver.Lib;
 
 public interface IConstraint
 {
-    RestrictResult Restrict(IList<VariableType> variables);
+    RestrictResult Restrict(VariableCollection variables);
     IEnumerable<int> GetVariableIndices();
 }

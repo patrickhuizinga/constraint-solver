@@ -85,7 +85,7 @@ public class EqualityConstraint : IConstraint
             _left.SetValueAtIndex(i, _left.GetValueAtIndex(i) + scale);
     }
 
-    public RestrictResult Restrict(IList<VariableType> variables)
+    public RestrictResult Restrict(VariableCollection variables)
     {
         int minSum = 0;
         int maxSum = 0;

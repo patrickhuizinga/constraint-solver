@@ -19,7 +19,7 @@ public class DistinctConstraint : IConstraint
         }
     }
     
-    public RestrictResult Restrict(IList<VariableType> variables)
+    public RestrictResult Restrict(VariableCollection variables)
     {
         var result = RestrictResult.NoChange;
         

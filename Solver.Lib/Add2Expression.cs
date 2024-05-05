@@ -105,13 +105,13 @@ public sealed class Add2Expression : Expression
         return new SumExpression(this, addition, scale);
     }
 
-    public override int GetMin(IList<VariableType> variables) =>
+    public override int GetMin(VariableCollection variables) =>
         Constant + variables[FirstVariableIndex].GetMin(FirstScale) + variables[SecondVariableIndex].GetMin(SecondScale);
 
-    public override int GetMax(IList<VariableType> variables) =>
+    public override int GetMax(VariableCollection variables) =>
         Constant + variables[FirstVariableIndex].GetMax(FirstScale) + variables[SecondVariableIndex].GetMax(SecondScale);
 
-    public override RestrictResult RestrictToMaxZero(IList<VariableType> variables)
+    public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         int firstMin = variables[FirstVariableIndex].GetMin(FirstScale);
         int secondMin = variables[SecondVariableIndex].GetMin(SecondScale);

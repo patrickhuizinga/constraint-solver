@@ -14,7 +14,7 @@ public class LessThanConstraint : IConstraint
         _expression = expression;
     }
 
-    public RestrictResult Restrict(IList<VariableType> variables)
+    public RestrictResult Restrict(VariableCollection variables)
     {
         return _expression.RestrictToMaxZero(variables);
     }
