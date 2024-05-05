@@ -60,15 +60,15 @@ public class EqualityConstraint : IConstraint
             case ConstantExpression:
                 break;
             case Add1Expression add1:
-                AddVariable(add1.VariableIndex, add1.Scale);
+                AddVariable(add1.VariableIndex, sign * add1.Scale);
                 break;
             case Add2Expression add2:
-                AddVariable(add2.FirstVariableIndex, add2.FirstScale);
-                AddVariable(add2.SecondVariableIndex, add2.SecondScale);
+                AddVariable(add2.FirstVariableIndex, sign * add2.FirstScale);
+                AddVariable(add2.SecondVariableIndex, sign * add2.SecondScale);
                 break;
             case SumExpression sum:
                 foreach (var (index, scale) in sum.GetVariables())
-                    AddVariable(index, scale);
+                    AddVariable(index, sign * scale);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(expression), expression, "Unsupported type of expression");
