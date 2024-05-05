@@ -156,7 +156,7 @@ public class IntegerProblem
     public IConstraint AddConstraint(Expression left, Comparison comparison, Expression right)
     {
         return AddConstraint(
-            ComparisonConstraint.Create(left, comparison, right));
+            Constraint.Create(left, comparison, right));
     }
 
     public IConstraint[] AddConstraints<TExpression>(
@@ -262,7 +262,7 @@ public class IntegerProblem
 
     private int GetSmallestVariable()
     {
-        // By returning the variable with he least 'range', we have fewer options to consider
+        // By returning the variable with the least 'range', we have fewer options to consider
         // and thereby need fewer guesses to make progress.
         
         int index = -1;

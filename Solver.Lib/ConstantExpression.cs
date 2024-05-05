@@ -4,10 +4,16 @@ public class ConstantExpression(int value) : Expression
 {
     public override Expression Add(Expression addition, int scale)
     {
+        if (scale == 0)
+            return this;
+        
+        if (Value == 0 && scale == 1)
+            return addition;
+        
         switch (addition)
         {
-            case ConstantExpression:
-                return new ConstantExpression(Value + scale * addition.Constant);
+            case ConstantExpression cv:
+                return Add(scale * cv.Constant);
             case Add1Expression add1:
                 return new Add1Expression(
                     add1.VariableIndex, scale * add1.Scale, 
@@ -24,11 +30,17 @@ public class ConstantExpression(int value) : Expression
 
     public override Expression Add(int addition)
     {
+        if (addition == 0)
+            return this;
+        
         return new ConstantExpression(Value + addition);
     }
 
     public override Expression Add(Variable addition, int scale)
     {
+        if (scale == 0)
+            return this;
+        
         return new Add1Expression(addition.Index, scale, Value);
     }
 
@@ -40,21 +52,15 @@ public class ConstantExpression(int value) : Expression
 
     public override int GetMax(IList<VariableType> variables) => Value;
     
-    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
+    public override RestrictResult RestrictToMaxZero(IList<VariableType> variables)
     {
-        return minValue <= Value
-            ? RestrictResult.NoChange
-            : RestrictResult.Infeasible;
-    }
-    
-    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
-    {
-        return Value <= maxValue
+        return Value <= 0
             ? RestrictResult.NoChange
             : RestrictResult.Infeasible;
     }
 
     public override IEnumerable<int> GetVariableIndices() => Enumerable.Empty<int>();
+    
     public override IEnumerable<KeyValuePair<int, int>> GetVariables() => Enumerable.Empty<KeyValuePair<int, int>>();
 
     public override string ToString()

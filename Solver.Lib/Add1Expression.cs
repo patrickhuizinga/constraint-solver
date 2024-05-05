@@ -27,6 +27,9 @@ public sealed class Add1Expression : Expression
 
     public override Expression Add(Expression addition, int scale)
     {
+        if (scale == 0)
+            return this;
+        
         switch (addition)
         {
             case ConstantExpression cv:
@@ -74,11 +77,17 @@ public sealed class Add1Expression : Expression
 
     public override Expression Add(int addition)
     {
+        if (addition == 0)
+            return this;
+        
         return new Add1Expression(VariableIndex, Scale, Constant + addition);
     }
 
     public override Expression Add(Variable addition, int scale)
     {
+        if (scale == 0)
+            return this;
+
         if (addition.Index == VariableIndex)
             return new Add1Expression(VariableIndex, Scale + 1, Constant);
         
@@ -94,23 +103,13 @@ public sealed class Add1Expression : Expression
     public override int GetMax(IList<VariableType> variables) =>
         Constant + variables[VariableIndex].GetMax(Scale);
 
-    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
+    public override RestrictResult RestrictToMaxZero(IList<VariableType> variables)
     {
         return Scale switch
         {
-            > 0 => Variable.RestrictToMin(VariableIndex, (minValue - Constant) / Scale, variables),
-            < 0 => Variable.RestrictToMax(VariableIndex, (minValue - Constant) / Scale, variables),
-            _ => Constant < minValue ? RestrictResult.Infeasible : RestrictResult.NoChange
-        };
-    }
-
-    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
-    {
-        return Scale switch
-        {
-            > 0 => Variable.RestrictToMax(VariableIndex, (maxValue - Constant) / Scale, variables),
-            < 0 => Variable.RestrictToMin(VariableIndex, (maxValue - Constant) / Scale, variables),
-            _ => maxValue < Constant ? RestrictResult.Infeasible : RestrictResult.NoChange
+            > 0 => Variable.RestrictToMax(VariableIndex, -Constant / Scale, variables),
+            < 0 => Variable.RestrictToMin(VariableIndex, -Constant / Scale, variables),
+            _ => 0 < Constant ? RestrictResult.Infeasible : RestrictResult.NoChange
         };
     }
 

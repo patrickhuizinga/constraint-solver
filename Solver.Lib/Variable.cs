@@ -73,19 +73,58 @@ public readonly struct Variable(int index)
         return new Add1Expression(left.Index, 1, right);
     }
 
+    public static Expression operator +(int left, Variable right)
+    {
+        return new Add1Expression(right.Index, 1, left);
+    }
+
     public static Expression operator -(Variable left, int right)
     {
         return new Add1Expression(left.Index, 1, -right);
     }
 
+    public static Expression operator -(int left, Variable right)
+    {
+        return new Add1Expression(right.Index, -1, left);
+    }
+
+    public static Expression operator -(Variable left, Variable right)
+    {
+        if (left.Index == right.Index)
+            return Expression.Zero;
+        
+        return new Add2Expression(left.Index, 1, right.Index, -1, 0);
+    }
+
+    public static Expression operator -(Variable variable)
+    {
+        return new Add1Expression(variable.Index, -1, 0);
+    }
+
+    public static Expression operator *(Variable variable, int scale)
+    {
+        if (scale == 0)
+            return Expression.Zero;
+
+        return new Add1Expression(variable.Index, scale, 0);
+    }
+
+    public static Expression operator *(int scale, Variable variable)
+    {
+        if (scale == 0)
+            return Expression.Zero;
+
+        return new Add1Expression(variable.Index, scale, 0);
+    }
+
     public static IConstraint operator <=(Variable left, Variable right)
     {
-        return ComparisonConstraint.Create(left, Comparison.LessEqual, right);
+        return new LessThanConstraint(left - right);
     }
 
     public static IConstraint operator >=(Variable left, Variable right)
     {
-        return ComparisonConstraint.Create(left, Comparison.GreaterEqual, right);
+        return new LessThanConstraint(right - left);
     }
 
     public static IConstraint operator ==(Variable left, Variable right)
@@ -95,7 +134,7 @@ public readonly struct Variable(int index)
 
     public static IConstraint operator !=(Variable left, Variable right)
     {
-        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
+        return new NotEqualConstraint(left - right);
     }
 
     public static IConstraint operator ==(Variable left, int right)
@@ -105,6 +144,6 @@ public readonly struct Variable(int index)
 
     public static IConstraint operator !=(Variable left, int right)
     {
-        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
+        return new NotEqualConstraint(left - right);
     }
 }

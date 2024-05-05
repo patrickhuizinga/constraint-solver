@@ -100,16 +100,28 @@ public sealed class SumExpression : Expression
 
     public override SumExpression Add(Expression addition, int scale)
     {
+        if (scale == 0)
+            return this;
+
+        if (addition is ConstantExpression cv)
+            return Add(scale * cv.Value);
+        
         return new SumExpression(this, addition, scale);
     }
 
     public override SumExpression Add(int addition)
     {
+        if (addition == 0)
+            return this;
+        
         return new SumExpression(this, addition);
     }
 
     public override Expression Add(Variable addition, int scale)
     {
+        if (scale == 0)
+            return this;
+
         return new SumExpression(this, addition, scale);
     }
 
@@ -123,69 +135,28 @@ public sealed class SumExpression : Expression
         return Constant + _variables.Sum(pair => variables[pair.Key].GetMax(pair.Value));
     }
 
-    public override RestrictResult RestrictToMin(int minValue, IList<VariableType> variables)
-    {
-        int maxSum = Constant;
-        foreach(var (index, scale) in _variables) 
-            maxSum += variables[index].GetMax(scale);
-
-        if (maxSum < minValue)
-            return RestrictResult.Infeasible;
-
-        var diff = maxSum - minValue;
-
-        var result = RestrictResult.NoChange;
-        foreach(var (index, scale) in _variables)
-        {
-            if (scale == 0)
-                continue;
-            
-            var variable = variables[index];
-            var elDiff = diff / scale;
-
-            // note that ellDiff will be negative when scale is negative
-            var elResult = scale > 0
-                ? Variable.RestrictToMin(index, variable.Max - elDiff, variables)
-                : Variable.RestrictToMax(index, variable.Min - elDiff, variables);
-            
-            if (elResult == RestrictResult.Infeasible)
-            {
-                // it should always be possible to set a lower minimum bound than the max possible value!
-                Debugger.Break();
-                return RestrictResult.Infeasible;
-            }
-
-            if (result == RestrictResult.NoChange) 
-                result = elResult;
-        }
-
-        return result;
-    }
-
-    public override RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables)
+    public override RestrictResult RestrictToMaxZero(IList<VariableType> variables)
     {
         int minSum = Constant;
         foreach(var (index, scale) in _variables) 
             minSum += variables[index].GetMin(scale);
 
-        if (maxValue < minSum)
+        if (0 < minSum)
             return RestrictResult.Infeasible;
-
-        var diff = maxValue - minSum;
 
         var result = RestrictResult.NoChange;
         foreach(var (index, scale) in _variables)
         {
             if (scale == 0)
                 continue;
-            
-            var variable = variables[index];
-            var elDiff = diff / scale;
 
-            // note that elDiff will be negative when scale is negative
+            // note that minSum <= 0
+            var elDiff = minSum / scale;
+            
+            // note that elDiff will be positive when scale is negative
             var elResult = scale > 0
-                ? Variable.RestrictToMax(index, variable.Min + elDiff, variables)
-                : Variable.RestrictToMin(index, variable.Max + elDiff, variables);
+                ? Variable.RestrictToMax(index, variables[index].Min - elDiff, variables)
+                : Variable.RestrictToMin(index, variables[index].Max - elDiff, variables);
             
             if (elResult == RestrictResult.Infeasible)
             {

@@ -45,11 +45,6 @@ public class DistinctConstraint : IConstraint
         return result;
     }
 
-    public int Range(IList<VariableType> variables)
-    {
-        return _variableIndices.Sum(i => variables[i].Max - variables[i].Min);
-    }
-
     public IEnumerable<int> GetVariableIndices()
     {
         return _variableIndices;

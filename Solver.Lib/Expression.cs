@@ -26,8 +26,8 @@ public abstract class Expression :
     
     public abstract int GetMin(IList<VariableType> variables);
     public abstract int GetMax(IList<VariableType> variables);
-    public abstract RestrictResult RestrictToMin(int minValue, IList<VariableType> variables);
-    public abstract RestrictResult RestrictToMax(int maxValue, IList<VariableType> variables);
+    
+    public abstract RestrictResult RestrictToMaxZero(IList<VariableType> variables);
 
     public abstract IEnumerable<int> GetVariableIndices();
     public abstract IEnumerable<KeyValuePair<int, int>> GetVariables();
@@ -42,6 +42,11 @@ public abstract class Expression :
     public static Expression operator +(Expression left, int right)
     {
         return left.Add(right);
+    }
+
+    public static Expression operator +(int left, Expression right)
+    {
+        return right.Add(left);
     }
 
     public static Expression operator +(Expression left, Variable right)
@@ -59,9 +64,24 @@ public abstract class Expression :
         return left.Add(-right);
     }
 
+    public static Expression operator -(int left, Expression right)
+    {
+        return new ConstantExpression(left).Add(right, -1);
+    }
+
     public static Expression operator -(Expression left, Variable right)
     {
         return left.Add(right, -1);
+    }
+
+    public static Expression operator -(Variable left, Expression right)
+    {
+        return new Add1Expression(left).Add(right, -1);
+    }
+
+    public static Expression operator -(Expression expression)
+    {
+        return Zero.Add(expression, -1);
     }
 
     public abstract Expression Add(Expression addition, int scale);
@@ -84,12 +104,12 @@ public abstract class Expression :
 
     public static IConstraint operator <=(Expression left, Expression right)
     {
-        return ComparisonConstraint.Create(left, Comparison.LessEqual, right);
+        return new LessThanConstraint(left, right);
     }
 
     public static IConstraint operator >=(Expression left, Expression right)
     {
-        return ComparisonConstraint.Create(left, Comparison.GreaterEqual, right);
+        return new LessThanConstraint(right, left);
     }
 
     public static IConstraint operator <(Expression left, Expression right)
@@ -127,7 +147,7 @@ public abstract class Expression :
 
     public static IConstraint operator !=(Expression left, Expression right)
     {
-        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
+        return new NotEqualConstraint(left, right);
     }
 
     public static IConstraint operator ==(Expression left, int right)
@@ -137,7 +157,7 @@ public abstract class Expression :
 
     public static IConstraint operator !=(Expression left, int right)
     {
-        return ComparisonConstraint.Create(left, Comparison.NotEquals, right);
+        return new NotEqualConstraint(left.Add(-right));
     }
 
     public static implicit operator Expression(int value)

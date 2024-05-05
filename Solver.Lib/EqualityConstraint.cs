@@ -153,17 +153,6 @@ public class EqualityConstraint : IConstraint
         return result;
     }
 
-    public int Range(IList<VariableType> variables)
-    {
-        int min = 0, max = 0;
-        foreach (var index in _left.Keys)
-        {
-            min += variables[index].Min;
-            max += variables[index].Max;
-        }
-        return max - min;
-    }
-
     public IEnumerable<int> GetVariableIndices() => _left.Keys;
 
     public EqualityConstraint Clone()
