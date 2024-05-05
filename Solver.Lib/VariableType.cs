@@ -18,6 +18,8 @@ public readonly record struct VariableType(int Min, int Max)
     public static VariableType Range(Range range) => new(range.Start.Value, range.End.Value);
 
 
+    public int Size => Max - Min;
+    
     public bool IsConstant => Min == Max;
 
     public bool TryGetConstant(out int value)
@@ -50,4 +52,28 @@ public readonly record struct VariableType(int Min, int Max)
     public static implicit operator VariableType(bool value) => value ? True : False;
 
     public static implicit operator VariableType(Range range) => new(range.Start.Value, range.End.Value);
+
+    public static VariableType operator +(VariableType left, VariableType right)
+    {
+        return new VariableType(left.Min + right.Min, left.Max + right.Max);
+    }
+
+    public static VariableType operator +(int left, VariableType right)
+    {
+        return new VariableType(left + right.Min, left + right.Max);
+    }
+
+    public static VariableType operator +(VariableType left, int right)
+    {
+        return new VariableType(left.Min + right, left.Max + right);
+    }
+
+    public static VariableType operator *(VariableType left, int scale)
+    {
+        return scale > 0
+            ? new VariableType(scale * left.Min, scale * left.Max)
+            : new VariableType(scale * left.Max, scale * left.Min);
+    }
+
+
 }

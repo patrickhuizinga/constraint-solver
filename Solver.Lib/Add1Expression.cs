@@ -103,6 +103,11 @@ public sealed class Add1Expression : Expression
     public override int GetMax(VariableCollection variables) =>
         Constant + variables[VariableIndex].GetMax(Scale);
 
+    public override VariableType GetRange(VariableCollection variables)
+    {
+        return Constant + variables[VariableIndex] * Scale;
+    }
+
     public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         return Scale switch

@@ -17,11 +17,13 @@ public class NotEqualConstraint : IConstraint
     public RestrictResult Restrict(VariableCollection variables)
     {
         // e!=0  <=>  e<0 or -e<0  <=>  e<=-1 or -e<=-1  <=>  1+e<=0 or 1-e<=0
+
+        var range = _expression.GetRange(variables);
         
-        if (_expression.GetMax(variables) == 0)
+        if (range.Max == 0)
             return (1 + _expression).RestrictToMaxZero(variables);
 
-        if (_expression.GetMin(variables) == 0)
+        if (range.Min == 0)
             return (1 - _expression).RestrictToMaxZero(variables);
 
         return RestrictResult.NoChange;

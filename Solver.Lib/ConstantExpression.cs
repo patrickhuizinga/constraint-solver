@@ -51,7 +51,11 @@ public class ConstantExpression(int value) : Expression
     public override int GetMin(VariableCollection variables) => Value;
 
     public override int GetMax(VariableCollection variables) => Value;
-    
+    public override VariableType GetRange(VariableCollection variables)
+    {
+        return Value;
+    }
+
     public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         return Value <= 0

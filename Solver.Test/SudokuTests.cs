@@ -134,11 +134,10 @@ public class SudokuTests
         PrintSudoku(problem[variables]);
         Console.WriteLine();
 
-        var isSolved = problem.FindFeasible();
-        Assert.That(isSolved);
-        Assert.That(problem.IsSolved);
+        var solution = problem.FindFeasible();
+        Assert.That(solution.IsSolved);
 
-        PrintSudoku(problem[variables]);
+        PrintSudoku(solution[variables]);
     }
 
     private static void SetStart(IntegerProblem problem, Variable[,,] variables, int[,] start)

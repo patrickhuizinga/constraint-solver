@@ -111,6 +111,11 @@ public sealed class Add2Expression : Expression
     public override int GetMax(VariableCollection variables) =>
         Constant + variables[FirstVariableIndex].GetMax(FirstScale) + variables[SecondVariableIndex].GetMax(SecondScale);
 
+    public override VariableType GetRange(VariableCollection variables)
+    {
+        return Constant + variables[FirstVariableIndex] * FirstScale + variables[SecondVariableIndex] * SecondScale;
+    }
+
     public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         int firstMin = variables[FirstVariableIndex].GetMin(FirstScale);

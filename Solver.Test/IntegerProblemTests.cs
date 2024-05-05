@@ -72,4 +72,42 @@ public class IntegerProblemTests
         
         Assert.That(problem.IsSolved);
     }
+
+    [Test]
+    public void TestSimpleMinimization()
+    {
+        var problem = new IntegerProblem();
+        var bin = problem.AddBinaryVariables(2);
+        var sum = SumExpression.Create(bin);
+        problem.AddConstraint(sum == 1);
+
+        problem.Objective = 2 * bin[0] + 3 * bin[1];
+        var solution = problem.Minimize();
+        Assert.That(solution.GetObjectiveValue(), Is.EqualTo(2));
+
+        var res = solution[bin];
+        Console.WriteLine(res[0] + " , " + res[1]);
+    }
+
+    [Test]
+    public void TestSimpleMinimization2()
+    {
+        var problem = new IntegerProblem();
+        var bin = problem.AddBinaryVariables(20);
+        var max = problem.AddVariable(0..10);
+        var sum = SumExpression.Create(bin);
+        problem.AddConstraint(sum == max);
+
+        problem.Objective = -10 * max;
+        for (int i = 0; i < bin.Length; i++) 
+            problem.Objective += i * bin[i];
+        
+        var solution = problem.Minimize();
+        // Assert.That(solution.IsSolved, "Solved");
+        Assert.That(!solution.IsInfeasible, "Feasible");
+
+        Console.WriteLine("obj: " + solution.GetObjectiveValue());
+        Console.WriteLine("bin: " + String.Join(", ", solution[bin]));
+        Console.WriteLine("max: " + solution[max]);
+    }
 }

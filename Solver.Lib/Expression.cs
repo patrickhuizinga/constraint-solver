@@ -26,6 +26,8 @@ public abstract class Expression :
     
     public abstract int GetMin(VariableCollection variables);
     public abstract int GetMax(VariableCollection variables);
+
+    public abstract VariableType GetRange(VariableCollection variables);
     
     public abstract RestrictResult RestrictToMaxZero(VariableCollection variables);
 
@@ -52,6 +54,11 @@ public abstract class Expression :
     public static Expression operator +(Expression left, Variable right)
     {
         return left.Add(right, 1);
+    }
+
+    public static Expression operator +(Variable left, Expression right)
+    {
+        return right.Add(left, 1);
     }
 
     public static Expression operator -(Expression left, Expression right)

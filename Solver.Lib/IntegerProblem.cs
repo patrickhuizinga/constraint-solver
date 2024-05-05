@@ -6,11 +6,17 @@ public class IntegerProblem
     private readonly List<IConstraint> _constraints;
     private readonly List<List<int>> _variableToConstraint;
 
+    public Expression Objective { get; set; }
+
+    public bool IsInfeasible { get; private set; }
+
     public IntegerProblem()
     {
         _variables = new VariableCollection();
         _constraints = [];
         _variableToConstraint = [];
+        Objective = Expression.Zero;
+        IsInfeasible = false;
     }
 
     public IntegerProblem(IntegerProblem source)
@@ -18,6 +24,8 @@ public class IntegerProblem
         _variables = new VariableCollection(source._variables);
         _constraints = source._constraints;
         _variableToConstraint = source._variableToConstraint;
+        Objective = source.Objective;
+        IsInfeasible = source.IsInfeasible;
     }
 
     public VariableType this[Variable variable]
@@ -77,8 +85,12 @@ public class IntegerProblem
             return result;
         }
     }
+    
+    public bool IsSolved => _variables
+        .Select((v, i) => v.IsConstant || _variableToConstraint[i].IsEmpty())
+        .All(b => b);
 
-    public bool IsSolved => _variables.All(value => value.IsConstant);
+    public int GetObjectiveValue() => Objective.GetMin(_variables);
 
     public Variable AddVariable(VariableType variable)
     {
@@ -221,7 +233,7 @@ public class IntegerProblem
             .SelectMany(varIndex => _variableToConstraint[varIndex])
             .Distinct();
 
-        if (modifiedVariables.Count == 0)
+        if (modifiedVariables.IsEmpty())
         {
             modifiedConstraints = Enumerable.Range(0, _constraints.Count);
         }
@@ -229,45 +241,50 @@ public class IntegerProblem
         foreach (var constraint in modifiedConstraints.Select(i => _constraints[i]))
         {
             var constraintResult = constraint.Restrict(_variables);
-            if (constraintResult == RestrictResult.Infeasible)
-                return RestrictResult.Infeasible;
-
-            if (constraintResult == RestrictResult.Change)
-                result = RestrictResult.Change;
+            switch (constraintResult)
+            {
+                case RestrictResult.Infeasible:
+                    IsInfeasible = true;
+                    return RestrictResult.Infeasible;
+                case RestrictResult.Change:
+                    result = RestrictResult.Change;
+                    break;
+            }
         }
         
         return result;
     }
 
-    public bool FindFeasible()
+    public IntegerProblem FindFeasible()
     {
-        var result = Restrict();
-        if (result == RestrictResult.Infeasible)
-            return false;
+        return FindFeasible(this);
 
-        if (IsSolved)
-            return true;
+    }
 
-        var variableIndex = GetSmallestVariable();
+    private static IntegerProblem FindFeasible(IntegerProblem problem)
+    {
+        problem.Restrict();
+        if (problem.IsInfeasible || problem.IsSolved)
+            return problem;
+
+        var variableIndex = problem.GetSmallestVariable();
         if (variableIndex == -1)
             throw new InvalidOperationException("There is no worst constraint?");
 
-        var variable = _variables[variableIndex];
+        var variable = problem._variables[variableIndex];
 
         // Larger values are more likely be decisive, probably
         for (int value = variable.Max; value >= variable.Min; value--)
         {
-            var clone = new IntegerProblem(this);
+            var clone = new IntegerProblem(problem);
             clone._variables[variableIndex] = value;
 
-            if (clone.FindFeasible())
-            {
-                _variables.CopyFrom(clone._variables);
-                return true;
-            }
+            var solution = FindFeasible(clone);
+            if (!solution.IsInfeasible)
+                return solution;
         }
 
-        return false;
+        return problem;
     }
 
     private int GetSmallestVariable()
@@ -275,22 +292,101 @@ public class IntegerProblem
         // By returning the variable with the least 'range', we have fewer options to consider
         // and thereby need fewer guesses to make progress.
 
-        int index = -1;
-        int smallestDiff = int.MaxValue;
+        var (bestIndex, bestScore) = GetSmallestObjectiveVariable();
+
+        if (bestScore <= 1)
+            return bestIndex;
+        
         for (int i = 0; i < _variables.Count; i++)
         {
             var variable = _variables[i];
-            int diff = variable.Max - variable.Min;
+            int score = variable.Size;
 
-            if (diff <= 0 || smallestDiff <= diff) continue;
+            if (score <= 0 || bestScore <= score) continue;
 
             // can't get smaller than this
-            if (diff == 1) return i;
+            if (score == 1) return i;
 
-            smallestDiff = diff;
-            index = i;
+            bestScore = score;
+            bestIndex = i;
         }
 
-        return index;
+        return bestIndex;
+    }
+
+    private (int index, int score) GetSmallestObjectiveVariable()
+    {
+        int bestIndex = -1;
+        int bestScore = int.MaxValue;
+        foreach (var (index, scale) in Objective.GetVariables())
+        {
+            var variable = _variables[index];
+            
+            int size = variable.Size;
+            if (size <= 0) continue;
+
+            var score = size -Math.Abs(scale);
+
+            if (bestScore <= score) continue;
+
+            // compared to GetSmallestVariable(), `diff` can go below 1, since we remove 
+            bestScore = score;
+            bestIndex = index;
+        }
+
+        return (bestIndex, bestScore);
+    }
+
+    public IntegerProblem Minimize()
+    {
+        foreach (var (index, scale) in Objective.GetVariables())
+        {
+            if (_variableToConstraint[index].IsEmpty()) 
+                _variables[index] = _variables[index].GetMin(scale);
+        }
+        
+        return Minimize(this);
+    }
+
+    private static IntegerProblem Minimize(IntegerProblem problem)
+    {
+        var bestSolution = problem;
+        var bestObjective = int.MaxValue;
+        
+        var pq = new PriorityQueue<IntegerProblem, int>();
+        pq.Enqueue(problem, problem.GetObjectiveValue());
+        
+        while (pq.TryDequeue(out var attempt, out int possibleObjective))
+        {
+            if (bestObjective <= possibleObjective)
+                return bestSolution;
+            
+            attempt.Restrict();
+            if (attempt.IsInfeasible) continue;
+            
+            if (attempt.IsSolved)
+            {
+                var objective = attempt.GetObjectiveValue();
+                if (objective < bestObjective)
+                {
+                    bestObjective = objective;
+                    bestSolution = attempt;
+                }
+                continue;
+            }
+            
+            var variableIndex = attempt.GetSmallestVariable();
+
+            var variable = attempt._variables[variableIndex];
+
+            for (int value = variable.Min; value <= variable.Max; value++)
+            {
+                var clone = new IntegerProblem(attempt);
+                clone._variables[variableIndex] = value;
+                pq.Enqueue(clone, clone.GetObjectiveValue());
+            }
+        }
+
+        return bestSolution;
     }
 }

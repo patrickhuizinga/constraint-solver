@@ -135,6 +135,13 @@ public sealed class SumExpression : Expression
         return Constant + _variables.Sum(pair => variables[pair.Key].GetMax(pair.Value));
     }
 
+    public override VariableType GetRange(VariableCollection variables)
+    {
+        return _variables.Aggregate(
+            (VariableType)Constant,
+            (range, pair) => range + variables[pair.Key] * pair.Value);
+    }
+
     public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         int minSum = Constant;
