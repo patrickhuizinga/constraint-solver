@@ -10,11 +10,13 @@ public class IntegerProblem
 
     public bool IsInfeasible { get; private set; }
 
+    public static readonly Variable VariableNone = new(0);
+
     public IntegerProblem()
     {
-        _variables = new VariableCollection();
+        _variables = new VariableCollection { VariableType.Zero };
         _constraints = [];
-        _variableToConstraint = [];
+        _variableToConstraint = [[]];
         Objective = Expression.Zero;
         IsInfeasible = false;
     }
@@ -52,8 +54,7 @@ public class IntegerProblem
     {
         get
         {
-            var lengthI = variables.GetLength(0);
-            var lengthJ = variables.GetLength(1);
+            var (lengthI, lengthJ) = variables.Dim();
 
             var result = new VariableType[lengthI, lengthJ];
             for (int i = 0; i < lengthI; i++)
@@ -70,9 +71,7 @@ public class IntegerProblem
     {
         get
         {
-            var lengthI = variables.GetLength(0);
-            var lengthJ = variables.GetLength(1);
-            var lengthK = variables.GetLength(2);
+            var (lengthI, lengthJ, lengthK) = variables.Dim();
 
             var result = new VariableType[lengthI, lengthJ, lengthK];
             for (int i = 0; i < lengthI; i++)
@@ -85,7 +84,7 @@ public class IntegerProblem
             return result;
         }
     }
-    
+
     public bool IsSolved => _variables
         .Select((v, i) => v.IsConstant || _variableToConstraint[i].IsEmpty())
         .All(b => b);
@@ -144,6 +143,36 @@ public class IntegerProblem
     public Variable[,,] AddBinaryVariables(int countI, int countJ, int countK) =>
         AddVariables(VariableType.Binary, countI, countJ, countK);
 
+    public Variable[] AddBinaryVariables(bool[] template)
+    {
+        var result = new Variable[template.Length];
+        
+        for (int i = 0; i < template.Length; i++)
+        {
+            result[i] = template[i]
+                ? AddBinaryVariable()
+                : VariableNone;
+        }
+
+        return result;
+    }
+
+    public Variable[,] AddBinaryVariables(bool[,] template)
+    {
+        var (lengthI, lengthJ) = template.Dim();
+        var result = new Variable[lengthI, lengthJ];
+        
+        for (int i = 0; i < lengthI; i++)
+        for (int j = 0; j < lengthJ; j++)
+        {
+            result[i, j] = template[i, j]
+                ? AddBinaryVariable()
+                : VariableNone;
+        }
+
+        return result;
+    }
+
     public void AddConstraint(IConstraint constraint)
     {
         int constraintIndex = _constraints.Count;
@@ -161,11 +190,10 @@ public class IntegerProblem
 
     public void AddConstraints<TConstraint>(TConstraint[,] constraints) where TConstraint : IConstraint
     {
-        var countI = constraints.GetLength(0);
-        var countJ = constraints.GetLength(1);
+        var (lengthI, lengthJ) = constraints.Dim();
 
-        for (int i = 0; i < countI; i++)
-        for (int j = 0; j < countJ; j++)
+        for (int i = 0; i < lengthI; i++)
+        for (int j = 0; j < lengthJ; j++)
         {
             AddConstraint(constraints[i, j]);
         }
@@ -181,7 +209,7 @@ public class IntegerProblem
         TExpression[] left, Comparison comparison, Expression right)
         where TExpression : Expression
     {
-        foreach (var leftItem in left) 
+        foreach (var leftItem in left)
             AddConstraint(leftItem, comparison, right);
     }
 
@@ -189,13 +217,23 @@ public class IntegerProblem
         TExpression[,] left, Comparison comparison, Expression right)
         where TExpression : Expression
     {
-        var countI = left.GetLength(0);
-        var countJ = left.GetLength(1);
+        var (lengthI, lengthJ) = left.Dim();
 
-        for (int i = 0; i < countI; i++)
-        for (int j = 0; j < countJ; j++)
+        for (int i = 0; i < lengthI; i++)
+        for (int j = 0; j < lengthJ; j++)
         {
             AddConstraint(left[i, j], comparison, right);
+        }
+    }
+
+    public void AddConstraints<TExpression1, TExpression2>(
+        TExpression1[] left, Comparison comparison, TExpression2[] right)
+        where TExpression1 : Expression
+        where TExpression2 : Expression
+    {
+        for (var i = 0; i < left.Length; i++)
+        {
+            AddConstraint(left[i], comparison, right[i]);
         }
     }
 
@@ -251,14 +289,13 @@ public class IntegerProblem
                     break;
             }
         }
-        
+
         return result;
     }
 
     public IntegerProblem FindFeasible()
     {
         return FindFeasible(this);
-
     }
 
     private static IntegerProblem FindFeasible(IntegerProblem problem)
@@ -296,7 +333,7 @@ public class IntegerProblem
 
         if (bestScore <= 1)
             return bestIndex;
-        
+
         for (int i = 0; i < _variables.Count; i++)
         {
             var variable = _variables[i];
@@ -321,11 +358,11 @@ public class IntegerProblem
         foreach (var (index, scale) in Objective.GetVariables())
         {
             var variable = _variables[index];
-            
+
             int size = variable.Size;
             if (size <= 0) continue;
 
-            var score = size -Math.Abs(scale);
+            var score = size - Math.Abs(scale);
 
             if (bestScore <= score) continue;
 
@@ -339,6 +376,7 @@ public class IntegerProblem
 
     public IntegerProblem Minimize()
     {
+        Console.WriteLine($"Minimizing {_variables.Count - 1} variables with {_constraints.Count} constraints.");
         foreach (var (index, scale) in Objective.GetVariables())
         {
             if (_variableToConstraint[index].IsEmpty())
@@ -348,7 +386,7 @@ public class IntegerProblem
                     : _variables[index].Max;
             }
         }
-        
+
         return Minimize(this);
     }
 
@@ -356,18 +394,18 @@ public class IntegerProblem
     {
         var bestSolution = problem;
         double bestObjective = double.MaxValue;
-        
+
         var pq = new PriorityQueue<IntegerProblem, double>();
         pq.Enqueue(problem, problem.GetObjectiveValue());
-        
+
         while (pq.TryDequeue(out var attempt, out double possibleObjective))
         {
             if (bestObjective <= possibleObjective)
                 return bestSolution;
-            
+
             attempt.Restrict();
             if (attempt.IsInfeasible) continue;
-            
+
             if (attempt.IsSolved)
             {
                 var objective = attempt.GetObjectiveValue();
@@ -376,9 +414,10 @@ public class IntegerProblem
                     bestObjective = objective;
                     bestSolution = attempt;
                 }
+
                 continue;
             }
-            
+
             var variableIndex = attempt.GetSmallestVariable();
 
             var variable = attempt._variables[variableIndex];

@@ -11,4 +11,14 @@ public static class Extensions
     {
         return source.Count == 0;
     }
+
+    public static (int, int) Dim<T>(this T[,] array) => (array.LengthI(), array.LengthJ());
+
+    public static (int, int, int) Dim<T>(this T[,,] array) => (array.LengthI(), array.LengthJ(), array.LengthK());
+
+    public static int LengthI<T>(this T[,] array) => array.GetLength(0);
+    public static int LengthJ<T>(this T[,] array) => array.GetLength(1);
+    public static int LengthI<T>(this T[,,] array) => array.GetLength(0);
+    public static int LengthJ<T>(this T[,,] array) => array.GetLength(1);
+    public static int LengthK<T>(this T[,,] array) => array.GetLength(2);
 }

@@ -142,8 +142,7 @@ public class SudokuTests
 
     private static void SetStart(IntegerProblem problem, Variable[,,] variables, int[,] start)
     {
-        var countI = start.GetLength(0);
-        var countJ = start.GetLength(1);
+        var (countI, countJ) = start.Dim();
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
@@ -213,8 +212,7 @@ public class SudokuTests
 
     private static void SetOneColdStart(IntegerProblem integerProblem, Variable[,,] variables, int[,] start)
     {
-        var countI = start.GetLength(0);
-        var countJ = start.GetLength(1);
+        var (countI, countJ) = start.Dim();
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
@@ -273,8 +271,7 @@ public class SudokuTests
 
     private static void SetStart(IntegerProblem problem, Variable[,] variables, int[,] start)
     {
-        var countI = start.GetLength(0);
-        var countJ = start.GetLength(1);
+        var (countI, countJ) = start.Dim();
         for (int i = 0; i < countI; i++)
         for (int j = 0; j < countJ; j++)
         {
@@ -287,9 +284,7 @@ public class SudokuTests
 
     private static void PrintSudoku(VariableType[,,] values)
     {
-        var lengthI = values.GetLength(0);
-        var lengthJ = values.GetLength(1);
-        var lengthK = values.GetLength(2);
+        var (lengthI, lengthJ, lengthK) = values.Dim();
         
         for (int i = 0; i < lengthI; i++)
         {
@@ -311,9 +306,7 @@ public class SudokuTests
 
     private static Expression[,] Sum(Variable[,,] expressions, int dimension)
     {
-        var countI = expressions.GetLength(0);
-        var countJ = expressions.GetLength(1);
-        var countK = expressions.GetLength(2);
+        var (countI, countJ, countK) = expressions.Dim();
 
         Expression[,] result;
 
@@ -386,8 +379,7 @@ public class SudokuTests
 
     private static DistinctConstraint[] Distinct(Variable[,] expressions, int dimension)
     {
-        var countI = expressions.GetLength(0);
-        var countJ = expressions.GetLength(1);
+        var (countI, countJ) = expressions.Dim();
 
         DistinctConstraint[] result;
 
@@ -424,9 +416,7 @@ public class SudokuTests
 
     private static DistinctConstraint[,] Distinct(Variable[,,] expressions, int dimension)
     {
-        var countI = expressions.GetLength(0);
-        var countJ = expressions.GetLength(1);
-        var countK = expressions.GetLength(2);
+        var (countI, countJ, countK) = expressions.Dim();
 
         DistinctConstraint[,] result;
 

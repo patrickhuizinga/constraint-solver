@@ -31,6 +31,19 @@ public sealed class SumDoubleExpression : DoubleExpression
             AddVariable(v.Index, 1);
     }
 
+    public SumDoubleExpression(IEnumerable<Variable> variables, IEnumerable<double> scales)
+        :this(variables.Zip(scales))
+    {
+    }
+
+    public SumDoubleExpression(IEnumerable<(Variable, double scale)> variables)
+    {
+        _variables = new SortedList<int, double>();
+        
+        foreach (var (variable, scale) in variables) 
+            AddVariable(variable.Index, scale);
+    }
+
     private SumDoubleExpression(SumDoubleExpression source, double constant)
     {
         _variables = new SortedList<int, double>(source._variables);
