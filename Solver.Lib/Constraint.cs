@@ -6,10 +6,10 @@ public static class Constraint
     {
         return comparison switch
         {
-            Comparison.Equals => new EqualityConstraint(left, right),
-            Comparison.LessEqual => new LessThanConstraint(left, right),
-            Comparison.GreaterEqual => new LessThanConstraint(right, left),
-            Comparison.NotEquals => new NotEqualConstraint(left, right),
+            Comparison.Equals => new EqualityConstraint(left - right),
+            Comparison.LessEqual => new LessThanConstraint(left - right),
+            Comparison.GreaterEqual => new LessThanConstraint(right - left),
+            Comparison.NotEquals => new NotEqualConstraint(left - right),
             _ => throw new ArgumentOutOfRangeException(nameof(comparison), comparison, "Unsupported comparison type")
         };
     }

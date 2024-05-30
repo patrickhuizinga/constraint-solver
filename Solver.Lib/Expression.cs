@@ -17,19 +17,20 @@ public abstract class Expression :
     IComparisonOperators<Expression, Expression, IConstraint>,
     IEqualityOperators<Expression, int, IConstraint>
 {
-    public static readonly ConstantExpression Zero = new(0);
-    public static readonly ConstantExpression One = new(1);
-    public static readonly ConstantExpression True = One;
-    public static readonly ConstantExpression False = Zero;
+    public static readonly Expression Zero = new ConstantExpression(0);
+    public static readonly Expression One = new ConstantExpression(1);
+    public static readonly Expression True = One;
+    public static readonly Expression False = Zero;
     
     public abstract int Constant { get; }
     
-    public abstract int GetMin(VariableCollection variables);
-    public abstract int GetMax(VariableCollection variables);
-
     public abstract VariableType GetRange(VariableCollection variables);
+
+    public abstract RestrictResult RestrictToEqualZero(VariableCollection variables);
     
     public abstract RestrictResult RestrictToMaxZero(VariableCollection variables);
+
+    public abstract Expression EliminateConstants(VariableCollection variables);
 
     public abstract IEnumerable<int> GetVariableIndices();
     public abstract IEnumerable<KeyValuePair<int, int>> GetVariables();
@@ -83,7 +84,7 @@ public abstract class Expression :
 
     public static Expression operator -(Variable left, Expression right)
     {
-        return new Add1Expression(left).Add(right, -1);
+        return new VariableExpression(left).Add(right, -1);
     }
 
     public static Expression operator -(Expression expression)
@@ -109,57 +110,75 @@ public abstract class Expression :
         return Zero.Add(expression, scale);
     }
 
+    public void Reduce(ref Expression target, int variableIndex)
+    {
+        var thisScale = GetScale(variableIndex);
+        if (thisScale == 0)
+            throw new ArgumentException("This expression does not contain the variable", nameof(variableIndex));
+        
+        var targetScale = target.GetScale(variableIndex);
+
+        // todo: optimize when one scale is a multiple of another
+        while (targetScale != 0)
+        {
+            if (thisScale <= targetScale)
+            {
+                target -= this;
+                targetScale -= thisScale;
+            }
+            else
+            {
+                target = this - target;
+                targetScale = thisScale - targetScale;
+            }
+        }
+    }
+
+    public abstract int GetScale(int variableIndex);
+
     public static IConstraint operator <=(Expression left, Expression right)
     {
-        return new LessThanConstraint(left, right);
+        return new LessThanConstraint(left.Add(right, -1));
     }
 
     public static IConstraint operator >=(Expression left, Expression right)
     {
-        return new LessThanConstraint(right, left);
+        return new LessThanConstraint(right.Add(left, -1));
     }
 
     public static IConstraint operator <(Expression left, Expression right)
     {
-        if (right is ConstantExpression cr)
-            right = cr - 1;
-        else if (left is ConstantExpression cl)
-            left = cl + 1;
-        else if (right is SumExpression se)
-            right = se.Add(-1);
+        if (left is ConstantExpression ce)
+            left = ce.Add(1);
         else
-            left += 1;
+            right = right.Add(-1);
         
-        return left <= right;
+        return new LessThanConstraint(left.Add(right, -1));
     }
 
     public static IConstraint operator >(Expression left, Expression right)
     {
-        if (right is ConstantExpression cr)
-            right = cr + 1;
-        else if (left is ConstantExpression cl)
-            left = cl - 1;
-        else if (right is SumExpression se)
-            right = se.Add(1);
+        if (left is ConstantExpression ce)
+            left = ce.Add(-1);
         else
-            left -= 1;
+            right = right.Add(1);
 
-        return left >= right;
+        return new LessThanConstraint(right.Add(left, -1));
     }
 
     public static IConstraint operator ==(Expression left, Expression right)
     {
-        return new EqualityConstraint(left, right);
+        return new EqualityConstraint(left.Add(right, -1));
     }
 
     public static IConstraint operator !=(Expression left, Expression right)
     {
-        return new NotEqualConstraint(left, right);
+        return new NotEqualConstraint(left.Add(right, -1));
     }
 
     public static IConstraint operator ==(Expression left, int right)
     {
-        return new EqualityConstraint(left, right);
+        return new EqualityConstraint(left.Add(-right));
     }
 
     public static IConstraint operator !=(Expression left, int right)
@@ -174,6 +193,6 @@ public abstract class Expression :
 
     public static implicit operator Expression(Variable variable)
     {
-        return new Add1Expression(variable);
+        return new VariableExpression(variable);
     }
 }

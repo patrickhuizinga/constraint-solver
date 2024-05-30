@@ -4,21 +4,26 @@ namespace Solver.Lib;
 #pragma warning disable CS0660, CS0661
 public readonly struct Variable(int index)
 {
+    public static readonly Variable None = new(0);
     public int Index { get; } = index;
 
     public static RestrictResult RestrictToMin(int index, int minValue, VariableCollection variables)
     {
         var oldVal = variables[index];
 
-        if (minValue <= oldVal.Min)
+        if (minValue < oldVal.Min)
         {
             return RestrictResult.NoChange;
+        }
+        if (minValue == oldVal.Min)
+        {
+            return minValue == oldVal.Max ? RestrictResult.Complete : RestrictResult.NoChange;
         }
         
         if (minValue <= oldVal.Max)
         {
             variables[index] = oldVal with { Min = minValue };
-            return RestrictResult.Change;
+            return minValue == oldVal.Max ? RestrictResult.Complete : RestrictResult.Change;
         }
 
         return RestrictResult.Infeasible;
@@ -27,15 +32,19 @@ public readonly struct Variable(int index)
     public static RestrictResult RestrictToMax(int index, int maxValue, VariableCollection variables)
     {
         var oldVal = variables[index];
-        if (oldVal.Max <= maxValue)
+        if (oldVal.Max < maxValue)
         {
             return RestrictResult.NoChange;
+        }
+        if (oldVal.Max == maxValue)
+        {
+            return oldVal.Min == maxValue ? RestrictResult.Complete : RestrictResult.NoChange;
         }
 
         if (oldVal.Min <= maxValue)
         {
             variables[index] = oldVal with { Max = maxValue };
-            return RestrictResult.Change;
+            return oldVal.Min == maxValue ? RestrictResult.Complete : RestrictResult.Change;
         }
 
         return RestrictResult.Infeasible;
@@ -46,18 +55,18 @@ public readonly struct Variable(int index)
         var oldVal = variables[index];
         
         if (oldVal.TryGetConstant(out int val))
-            return val == value ? RestrictResult.Infeasible : RestrictResult.NoChange;
+            return val == value ? RestrictResult.Infeasible : RestrictResult.Complete;
         
         if (value == oldVal.Min)
         {   
             variables[index] = oldVal with { Min = value + 1 };
-            return RestrictResult.Change;
+            return oldVal.Size == 1 ? RestrictResult.Complete : RestrictResult.Change;
         }
 
         if (value == oldVal.Max)
         {
             variables[index] = oldVal with { Max = value - 1 };
-            return RestrictResult.Change;
+            return oldVal.Size == 1 ? RestrictResult.Complete : RestrictResult.Change;
         }
 
         return RestrictResult.NoChange;
@@ -70,35 +79,35 @@ public readonly struct Variable(int index)
 
     public static Expression operator +(Variable left, int right)
     {
-        return new Add1Expression(left.Index, 1, right);
+        return new VariableExpression(left.Index, 1, right);
     }
 
     public static Expression operator +(int left, Variable right)
     {
-        return new Add1Expression(right.Index, 1, left);
+        return new VariableExpression(right.Index, 1, left);
     }
 
     public static Expression operator -(Variable left, int right)
     {
-        return new Add1Expression(left.Index, 1, -right);
+        return new VariableExpression(left.Index, 1, -right);
     }
 
     public static Expression operator -(int left, Variable right)
     {
-        return new Add1Expression(right.Index, -1, left);
+        return new VariableExpression(right.Index, -1, left);
     }
 
     public static Expression operator -(Variable left, Variable right)
     {
         if (left.Index == right.Index)
             return Expression.Zero;
-        
-        return new Add2Expression(left.Index, 1, right.Index, -1, 0);
+
+        return new SumExpression([left, right], [1, -1], 0);
     }
 
     public static Expression operator -(Variable variable)
     {
-        return new Add1Expression(variable.Index, -1, 0);
+        return new VariableExpression(variable.Index, -1, 0);
     }
 
     public static Expression operator *(Variable variable, int scale)
@@ -106,7 +115,7 @@ public readonly struct Variable(int index)
         if (scale == 0)
             return Expression.Zero;
 
-        return new Add1Expression(variable.Index, scale, 0);
+        return new VariableExpression(variable.Index, scale, 0);
     }
 
     public static Expression operator *(int scale, Variable variable)
@@ -114,7 +123,7 @@ public readonly struct Variable(int index)
         if (scale == 0)
             return Expression.Zero;
 
-        return new Add1Expression(variable.Index, scale, 0);
+        return new VariableExpression(variable.Index, scale, 0);
     }
 
     public static DoubleExpression operator *(Variable variable, double scale)
@@ -145,7 +154,7 @@ public readonly struct Variable(int index)
 
     public static IConstraint operator ==(Variable left, Variable right)
     {
-        return new EqualityConstraint(left, right);
+        return new EqualityConstraint(left - right);
     }
 
     public static IConstraint operator !=(Variable left, Variable right)
@@ -155,11 +164,16 @@ public readonly struct Variable(int index)
 
     public static IConstraint operator ==(Variable left, int right)
     {
-        return new EqualityConstraint(left, right);
+        return new EqualityConstraint(left - right);
     }
 
     public static IConstraint operator !=(Variable left, int right)
     {
         return new NotEqualConstraint(left - right);
+    }
+
+    public override string ToString()
+    {
+        return $"[{Index}]";
     }
 }

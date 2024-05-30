@@ -14,15 +14,10 @@ public class ConstantExpression(int value) : Expression
         {
             case ConstantExpression cv:
                 return Add(scale * cv.Constant);
-            case Add1Expression add1:
-                return new Add1Expression(
+            case VariableExpression add1:
+                return new VariableExpression(
                     add1.VariableIndex, scale * add1.Scale, 
-                    add1.Constant + Value);
-            case Add2Expression add2:
-                return new Add2Expression(
-                    add2.FirstVariableIndex, scale * add2.FirstScale,
-                    add2.SecondVariableIndex, scale * add2.SecondScale,
-                    add2.Constant + Value);
+                    scale * add1.Constant + Value);
             default:
                 return new SumExpression(this, addition, scale);
         }
@@ -41,25 +36,33 @@ public class ConstantExpression(int value) : Expression
         if (scale == 0)
             return this;
         
-        return new Add1Expression(addition.Index, scale, Value);
+        return new VariableExpression(addition.Index, scale, Value);
     }
+
+    public override int GetScale(int variableIndex) => 0;
+    
+    public override Expression EliminateConstants(VariableCollection variables) => this;
 
     public int Value { get; } = value;
 
     public override int Constant => Value;
 
-    public override int GetMin(VariableCollection variables) => Value;
-
-    public override int GetMax(VariableCollection variables) => Value;
     public override VariableType GetRange(VariableCollection variables)
     {
         return Value;
     }
 
+    public override RestrictResult RestrictToEqualZero(VariableCollection variables)
+    {
+        return Value == 0
+            ? RestrictResult.Complete
+            : RestrictResult.Infeasible;
+    }
+
     public override RestrictResult RestrictToMaxZero(VariableCollection variables)
     {
         return Value <= 0
-            ? RestrictResult.NoChange
+            ? RestrictResult.Complete
             : RestrictResult.Infeasible;
     }
 

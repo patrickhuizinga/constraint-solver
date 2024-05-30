@@ -18,6 +18,8 @@ public class SudokuTests
         problem.AddConstraints(sum2, Comparison.Equals, 1);
 
         problem[variables[1, 0, 1]] = VariableType.True;
+        
+        problem.Reduce();
 
         var result = problem.Restrict();
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
@@ -52,15 +54,21 @@ public class SudokuTests
         };
 
         SetStart(problem, variables, start);
-
+        PrintSudoku(problem[variables]);
+        Console.WriteLine();
+        
+        // problem.Reduce();
+        // PrintSudoku(problem[variables]);
+        // Console.WriteLine();
+        
         var result = problem.Restrict();
+        PrintSudoku(problem[variables]);
+
         Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
         Assert.That(problem.IsSolved);
 
         result = problem.Restrict();
         Assert.That(result, Is.EqualTo(RestrictResult.NoChange));
-
-        PrintSudoku(problem[variables]);
     }
 
     [Test]
@@ -138,6 +146,55 @@ public class SudokuTests
         Assert.That(solution.IsSolved);
 
         PrintSudoku(solution[variables]);
+    }
+
+    [Test]
+    public void ExpertSudokuReduce()
+    {
+        var problem = new IntegerProblem();
+        var variables = problem.AddBinaryVariables(9, 9, 9);
+        var sum0 = Sum(variables, 0);
+        var sum1 = Sum(variables, 1);
+        var sum2 = Sum(variables, 2);
+        var sumBlocks = SumBlocks(variables, 3);
+
+        problem.AddConstraints(sum0, Comparison.Equals, 1);
+        problem.AddConstraints(sum1, Comparison.Equals, 1);
+        problem.AddConstraints(sum2, Comparison.Equals, 1);
+        problem.AddConstraints(sumBlocks, Comparison.Equals, 1);
+
+        int[,] extreme =
+        {
+            { 4, 1, 0, 0, 0, 0, 0, 0, 0 },
+            { 0, 0, 3, 0, 0, 0, 0, 2, 9 },
+            { 0, 0, 0, 0, 0, 4, 0, 6, 0 },
+            { 0, 0, 0, 7, 0, 0, 0, 9, 0 },
+            { 0, 0, 7, 4, 0, 0, 0, 0, 2 },
+            { 0, 0, 0, 0, 0, 8, 0, 0, 5 },
+            { 6, 7, 0, 0, 0, 1, 0, 0, 0 },
+            { 0, 0, 9, 0, 2, 0, 0, 0, 3 },
+            { 0, 3, 0, 0, 0, 9, 0, 5, 0 },
+        };
+
+        SetStart(problem, variables, extreme);
+
+        Console.WriteLine("restrict:");
+        problem.Restrict();
+        PrintSudoku(problem[variables]);
+        Console.WriteLine();
+
+        Console.WriteLine(problem.ConstraintsRestricted);
+
+        problem.PreSolve();
+
+        Console.WriteLine(problem.ConstraintsRestricted);
+        
+        Console.WriteLine("find feasible");
+        var solution2 = problem.FindFeasible();
+        PrintSudoku(solution2[variables]);
+        
+        Assert.That(solution2.IsInfeasible, Is.False, "Feasible");
+        Assert.That(solution2.IsSolved, "Solved");
     }
 
     private static void SetStart(IntegerProblem problem, Variable[,,] variables, int[,] start)
@@ -221,64 +278,6 @@ public class SudokuTests
             
             var k = start[i, j] - 1;
             integerProblem[variables[i, j, k]] = VariableType.False;
-        }
-    }
-
-    [Test, Ignore("constraints not implemented strongly enough")]
-    public void RangeSudoku()
-    {   
-        var problem = new IntegerProblem();
-        var variables = problem.AddVariables(1..9, 9, 9);
-        var distinctRows = Distinct(variables, 0);
-        var distinctCols = Distinct(variables, 1);
-        var distinctBlocks = DistinctBlocks(variables, 3);
-
-        problem.AddConstraints(distinctRows);
-        problem.AddConstraints(distinctCols);
-        problem.AddConstraints(distinctBlocks);
-
-        int[,] medium =
-        {
-            { 0, 0, 4, 0, 7, 0, 0, 9, 1 },
-            { 0, 3, 0, 0, 0, 8, 0, 0, 0 },
-            { 0, 6, 7, 0, 0, 0, 3, 0, 5 },
-            { 0, 4, 0, 9, 3, 0, 0, 0, 0 },
-            { 0, 0, 1, 0, 0, 0, 9, 0, 0 },
-            { 0, 0, 0, 8, 0, 4, 0, 3, 6 },
-            { 4, 7, 0, 3, 5, 0, 6, 1, 2 },
-            { 9, 2, 0, 7, 8, 1, 4, 0, 3 },
-            { 5, 1, 0, 0, 0, 6, 0, 0, 0 },
-        };
-
-        SetStart(problem, variables, medium);
-
-        var result = problem.Restrict();
-        Assert.That(result, Is.Not.EqualTo(RestrictResult.Infeasible));
-        Assert.That(problem.IsSolved);
-
-        for (int i = 0; i < 9; i++)
-        {
-            Console.Write("[");
-            for (int j = 0; j < 9; j++)
-            {
-                Console.Write(problem[variables[i, j]]);
-                Console.Write(", ");
-            }
-
-            Console.WriteLine("]");
-        }
-    }
-
-    private static void SetStart(IntegerProblem problem, Variable[,] variables, int[,] start)
-    {
-        var (countI, countJ) = start.Dim();
-        for (int i = 0; i < countI; i++)
-        for (int j = 0; j < countJ; j++)
-        {
-            if (start[i, j] == 0)
-                continue;
-            
-            problem[variables[i, j]] = start[i, j];
         }
     }
 
@@ -372,136 +371,6 @@ public class SudokuTests
                 parts[i * size + j] = expressions[bi * size + i, bj * size + j, k];
 
             result[bi * size + bj, k] = SumExpression.Create(parts);
-        }
-
-        return result;
-    }
-
-    private static DistinctConstraint[] Distinct(Variable[,] expressions, int dimension)
-    {
-        var (countI, countJ) = expressions.Dim();
-
-        DistinctConstraint[] result;
-
-        switch (dimension)
-        {
-            case 0:
-                result = new DistinctConstraint[countJ];
-                for (int j = 0; j < countJ; j++)
-                {
-                    var parts = new Variable[countI];
-                    for (int i = 0; i < countI; i++)
-                        parts[i] = expressions[i, j];
-
-                    result[j] = new DistinctConstraint(parts) { DefaultValue = 0 };
-                }
-
-                return result;
-            case 1:
-                result = new DistinctConstraint[countI];
-                for (int i = 0; i < countI; i++)
-                {
-                    var parts = new Variable[countJ];
-                    for (int j = 0; j < countJ; j++)
-                        parts[j] = expressions[i, j];
-
-                    result[i] = new DistinctConstraint(parts) { DefaultValue = 0 };
-                }
-
-                return result;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(dimension), dimension, "Dimension should be 0, 1, or 2");
-        }
-    }
-
-    private static DistinctConstraint[,] Distinct(Variable[,,] expressions, int dimension)
-    {
-        var (countI, countJ, countK) = expressions.Dim();
-
-        DistinctConstraint[,] result;
-
-        switch (dimension)
-        {
-            case 0:
-                result = new DistinctConstraint[countJ, countK];
-                for (int j = 0; j < countJ; j++)
-                for (int k = 0; k < countK; k++)
-                {
-                    var parts = new Variable[countI];
-                    for (int i = 0; i < countI; i++)
-                        parts[i] = expressions[i, j, k];
-
-                    result[j, k] = new DistinctConstraint(parts) { DefaultValue = 0 };
-                }
-
-                return result;
-            case 1:
-                result = new DistinctConstraint[countI, countK];
-                for (int i = 0; i < countI; i++)
-                for (int k = 0; k < countK; k++)
-                {
-                    var parts = new Variable[countJ];
-                    for (int j = 0; j < countJ; j++)
-                        parts[j] = expressions[i, j, k];
-
-                    result[i, k] = new DistinctConstraint(parts) { DefaultValue = 0 };
-                }
-
-                return result;
-            case 2:
-                result = new DistinctConstraint[countI, countJ];
-                for (int i = 0; i < countI; i++)
-                for (int j = 0; j < countJ; j++)
-                {
-                    var parts = new Variable[countK];
-                    for (int k = 0; k < countK; k++)
-                        parts[k] = expressions[i, j, k];
-
-                    result[i, j] = new DistinctConstraint(parts) { DefaultValue = 0 };
-                }
-
-                return result;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(dimension), dimension, "Dimension should be 0, 1, or 2");
-        }
-    }
-
-    private static DistinctConstraint[] DistinctBlocks(Variable[,] expressions, int size)
-    {
-        var countK = size * size;
-
-        var result = new DistinctConstraint[size * size];
-
-        for (int bi = 0; bi < size; bi++)
-        for (int bj = 0; bj < size; bj++)
-        {
-            var parts = new Variable[countK];
-            for (int i = 0; i < size; i++)
-            for (int j = 0; j < size; j++)
-                parts[i * size + j] = expressions[bi * size + i, bj * size + j];
-
-            result[bi * size + bj] = new DistinctConstraint(parts) { DefaultValue = 0 };
-        }
-
-        return result;
-    }
-
-    private static DistinctConstraint[,] DistinctBlocks(Variable[,,] expressions, int size)
-    {
-        var countK = size * size;
-
-        var result = new DistinctConstraint[size * size, countK];
-
-        for (int bi = 0; bi < size; bi++)
-        for (int bj = 0; bj < size; bj++)
-        for (int k = 0; k < countK; k++)
-        {
-            var parts = new Variable[countK];
-            for (int i = 0; i < size; i++)
-            for (int j = 0; j < size; j++)
-                parts[i * size + j] = expressions[bi * size + i, bj * size + j, k];
-
-            result[bi * size + bj, k] = new DistinctConstraint(parts) { DefaultValue = 0 };
         }
 
         return result;

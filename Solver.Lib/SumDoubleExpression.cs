@@ -44,6 +44,26 @@ public sealed class SumDoubleExpression : DoubleExpression
             AddVariable(variable.Index, scale);
     }
 
+    public SumDoubleExpression(params Expression[] expressions)
+    {
+        _variables = new SortedList<int, double>();
+        foreach (var v in expressions) 
+            AddVariables(v, 1, ref _constant);
+    }
+
+    public SumDoubleExpression(IEnumerable<Expression> expressions, IEnumerable<double> scales)
+        :this(expressions.Zip(scales))
+    {
+    }
+
+    public SumDoubleExpression(IEnumerable<(Expression, double scale)> expressions)
+    {
+        _variables = new SortedList<int, double>();
+        
+        foreach (var (expression, scale) in expressions) 
+            AddVariables(expression, scale, ref _constant);
+    }
+
     private SumDoubleExpression(SumDoubleExpression source, double constant)
     {
         _variables = new SortedList<int, double>(source._variables);
@@ -89,36 +109,15 @@ public sealed class SumDoubleExpression : DoubleExpression
         if (i == -1)
             _variables[index] = scale;
         else
-            _variables.SetValueAtIndex(i, _variables.GetValueAtIndex(i) + scale);
-    }
-
-    public static Expression Create()
-    {
-        return new ConstantExpression(0);
-    }
-
-    public static Expression Create(Variable variable)
-    {
-        return new Add1Expression(variable.Index, 1, 0);
-    }
-
-    public static Expression Create(Variable variable1, Variable variable2)
-    {
-        if (variable1.Index == variable2.Index)
-            return new Add1Expression(variable1.Index, 2, 0);
-
-        return new Add2Expression(variable1.Index, 1, variable2.Index, 1, 0);
-    }
-
-    public static Expression Create(params Variable[] variables)
-    {
-        return variables.Length switch
         {
-            0 => new ConstantExpression(0),
-            1 => new Add1Expression(variables[0].Index, 1, 0),
-            2 => Create(variables[0], variables[1]),
-            _ => new SumExpression(variables)
-        };
+            var oldValue = -_variables.GetValueAtIndex(i);
+            _variables.SetValueAtIndex(i, oldValue + scale);
+        }
+    }
+
+    public static SumDoubleExpression Create(params Variable[] variables)
+    {
+        return new SumDoubleExpression(variables);
     }
 
     public SumDoubleExpression Add(Expression addition, int scale)
@@ -158,7 +157,17 @@ public sealed class SumDoubleExpression : DoubleExpression
 
     public override double GetMin(VariableCollection variables)
     {
-        return Constant + _variables.Sum(pair => variables[pair.Key].GetMin(pair.Value));
+        return Constant + _variables.Sum(variables.GetMin);
+    }
+
+    public override double GetMax(VariableCollection variables)
+    {
+        return Constant + _variables.Sum(variables.GetMax);
+    }
+
+    public override double GetScale(int variableIndex)
+    {
+        return _variables.GetValueOrDefault(variableIndex);
     }
 
     public override IEnumerable<int> GetVariableIndices()

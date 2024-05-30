@@ -18,7 +18,14 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Solver.Gurobi\Solver.Gurobi.csproj" />
       <ProjectReference Include="..\Solver.Lib\Solver.Lib.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="gurobi110.netstandard20">
+        <HintPath>..\..\..\..\..\Library\gurobi1100\macos_universal2\lib\gurobi110.netstandard20.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

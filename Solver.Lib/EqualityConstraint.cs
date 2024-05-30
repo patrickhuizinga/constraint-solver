@@ -1,162 +1,236 @@
-using System.Diagnostics;
-
 namespace Solver.Lib;
 
-public class EqualityConstraint : IConstraint
+public class EqualityConstraint(Expression expression) : IConstraint
 {
-    private readonly SortedList<int, int> _left;
-    private readonly int _right;
-    
-    public EqualityConstraint(Expression left, int right)
-    {
-        _right = right;
-        _left = new SortedList<int, int>();
-        AddVariables(left, +1, ref _right);
-    }
-
-    public EqualityConstraint(Expression left, Expression right)
-    {
-        _right = 0;
-        _left = new SortedList<int, int>();
-        AddVariables(left, +1, ref _right);
-        AddVariables(right, -1, ref _right);
-
-        for (int i = _left.Count - 1; i >= 0; i--)
-        {
-            var scale = _left.GetValueAtIndex(i);
-            if (scale == 0)
-                _left.RemoveAt(i);
-        }
-    }
-
-    public EqualityConstraint(Variable left, int right)
-    {
-        _right = right;
-        _left = new SortedList<int, int> { { left.Index, 1 } };
-    }
-
-    public EqualityConstraint(Variable left, Variable right)
-    {
-        _right = 0;
-        _left = new SortedList<int, int>();
-        if (left.Index == right.Index)
-            return;
-
-        _left = new SortedList<int, int> { { left.Index, 1 }, { right.Index, -1 } };
-    }
-
-    public EqualityConstraint(EqualityConstraint source)
-    {
-        _right = source._right;
-        _left = new SortedList<int, int>(source._left);
-    }
-
-    private void AddVariables(Expression expression, int sign, ref int right)
-    {
-        right -= sign * expression.Constant;
-        
-        switch (expression)
-        {
-            case ConstantExpression:
-                break;
-            case Add1Expression add1:
-                AddVariable(add1.VariableIndex, sign * add1.Scale);
-                break;
-            case Add2Expression add2:
-                AddVariable(add2.FirstVariableIndex, sign * add2.FirstScale);
-                AddVariable(add2.SecondVariableIndex, sign * add2.SecondScale);
-                break;
-            case SumExpression sum:
-                foreach (var (index, scale) in sum.GetVariables())
-                    AddVariable(index, sign * scale);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(expression), expression, "Unsupported type of expression");
-        }
-    }
-
-    private void AddVariable(int index, int scale)
-    {
-        var i = _left.IndexOfKey(index);
-
-        if (i == -1)
-            _left[index] = scale;
-        else
-            _left.SetValueAtIndex(i, _left.GetValueAtIndex(i) + scale);
-    }
+    public Expression Expression => expression;
 
     public RestrictResult Restrict(VariableCollection variables)
     {
-        int minSum = 0;
-        int maxSum = 0;
-        foreach(var (index, scale) in _left)
-        {
-            if (scale == 0) continue;
-            
-            var variable = variables[index];
-            minSum += variable.GetMin(scale);
-            maxSum += variable.GetMax(scale);
-        }
-
-        if (_right < minSum || maxSum < _right)
-            return RestrictResult.Infeasible;
-        if (minSum == maxSum)
-            return RestrictResult.NoChange;
-
-        var minDiff = _right - minSum;
-        var maxDiff = maxSum - _right;
-
-        var result = RestrictResult.NoChange;
-        foreach(var (index, scale) in _left)
-        {
-            if (scale == 0) continue;
-            
-            int elMinDiff, elMaxDiff;
-            switch (scale)
-            {
-                case > 0:
-                    elMinDiff = minDiff / scale;
-                    elMaxDiff = maxDiff / scale;
-                    break;
-                case < 0:
-                    // note: flipped min and max
-                    elMinDiff = maxDiff / -scale;
-                    elMaxDiff = minDiff / -scale;
-                    break;
-                default:
-                    continue;
-            }
-
-            var maxResult = Variable.RestrictToMax(index, variables[index].Min + elMinDiff, variables);
-            if (maxResult == RestrictResult.Infeasible)
-            {
-                // it should always be possible to set a higher maximum bound than the min possible value!
-                Debugger.Break();
-                return RestrictResult.Infeasible;
-            }
-            
-            var minResult = Variable.RestrictToMin(index, variables[index].Max - elMaxDiff, variables);
-            if (minResult == RestrictResult.Infeasible)
-            {
-                // it should always be possible to set a lower minimum bound than the max possible value!
-                Debugger.Break();
-                return RestrictResult.Infeasible;
-            }
-
-            if (minResult == RestrictResult.NoChange)
-                minResult = maxResult;
-
-            if (result == RestrictResult.NoChange) 
-                result = minResult;
-        }
-
-        return result;
+        return expression.RestrictToEqualZero(variables);
     }
 
-    public IEnumerable<int> GetVariableIndices() => _left.Keys;
+    public IEnumerable<int> GetVariableIndices() => expression.GetVariableIndices();
 
-    public EqualityConstraint Clone()
+    public int VariableCount => expression.GetVariables().Count();
+
+    public int GetScale(int variableIndex) => expression.GetScale(variableIndex);
+
+    public EqualityConstraint ReduceScales(int primaryVariableIndex)
     {
-        return new EqualityConstraint(this);
+        var primaryScale = GetScale(primaryVariableIndex);
+        switch (primaryScale)
+        {
+            case 1:
+                return this;
+            case -1:
+                return new EqualityConstraint(-expression);
+        }
+
+        var factor = Math.Abs(expression.Constant);
+        foreach (var (_, scale) in expression.GetVariables())
+        {
+            if (factor == 1 || factor == -1) break;
+
+            factor = factor == 0
+                ? Math.Abs(scale)
+                : Gcd(factor, Math.Abs(scale));
+        }
+
+        if (factor == 0)
+            return this;
+        if (primaryScale < 0)
+            factor = -factor;
+        else if (factor == 1)
+            return this;
+
+        var newVariables = expression.GetVariables()
+            .Select(pair => (new Variable(pair.Key), pair.Value / factor));
+        var newConstant = expression.Constant / factor;
+        
+        return new EqualityConstraint(new SumExpression(newVariables, newConstant));
+    }
+
+    private int Gcd(int first, int second)
+    {
+        if (first < second)
+            (first, second) = (second, first);
+
+        do
+        {
+            (first, second) = (second, first % second);
+        } while (second != 0);
+
+        return first;
+    }
+
+    public IConstraint ReduceBy(EqualityConstraint source, int variableIndex)
+    {
+        var sourceScale = source.GetScale(variableIndex);
+        if (sourceScale == 0)
+            throw new ArgumentException("The source does not contain the variable", nameof(variableIndex));
+
+        var targetScale = expression.GetScale(variableIndex);
+        if (targetScale == 0)
+            return this;
+
+        var sourceExpression = source.Expression;
+        var targetExpression = expression;
+
+        while (targetScale != 0)
+        {
+            if (sourceScale == targetScale)
+            {
+                return new EqualityConstraint(targetExpression - sourceExpression);
+            }
+
+            if (Math.Abs(targetScale) < Math.Abs(sourceScale))
+            {
+                (targetScale, sourceScale) = (sourceScale, targetScale);
+                (targetExpression, sourceExpression) = (sourceExpression, targetExpression);
+            }
+            
+            // sourceScale.Abs <= targetScale.Abs
+            
+            var factor = targetScale / sourceScale;
+            targetExpression -= factor * sourceExpression;
+            targetScale -= factor * sourceScale;
+        }
+
+        return new EqualityConstraint(targetExpression);
+    }
+
+    public IConstraint EliminateConstants(VariableCollection variables)
+    {
+        var result = expression.EliminateConstants(variables);
+        if (ReferenceEquals(result, expression))
+            return this;
+
+        return new EqualityConstraint(result);
+    }
+
+    public int EstimateValidOptionsCount(VariableCollection variables)
+    {
+        var range = expression.GetRange(variables);
+        if (!range.Contains(0))
+            return 1;
+        
+        return Combinations.Get(range.Size, range.Max);
+    }
+
+    public IEnumerable<(int variableIndex, int value)[]> GetValidOptions(VariableCollection variables)
+    {
+        var scales = new List<(int abs, int sign)>();
+        var ranges = new List<VariableType>();
+
+        var min = expression.Constant;
+        var first = new List<(int, int)>();
+        
+        foreach (var (index, scale) in expression.GetVariables())
+        {
+            if (scale == 0)
+                continue;
+            
+            var range = variables[index];
+            
+            min += range.GetMin(scale);
+
+            if (range.IsConstant)
+                continue;
+
+            var sign = Math.Sign(scale);
+            var absScale = Math.Abs(scale);
+            
+            scales.Add((absScale, sign));
+            ranges.Add(range);
+
+            var firsValue = sign == 1 ? range.Min : range.Max;
+            first.Add((index, firsValue));
+        }
+
+        if (min > 0)
+            throw new InvalidOperationException("Infeasible constraint has no options.");
+
+        (int, int)[] result = first.ToArray();
+        
+        // spacial case for when the equality holds.
+        if (min == 0)
+        {
+            return Enumerable.Repeat(result, 1);
+        }
+
+        // special case for a hot-one encoded set of booleans.
+        if (min == -1)
+        {
+            return GetHotOneOptions(result, scales);
+        }
+
+        return GetValidOptions(scales, ranges, result, 0, min);
+    }
+
+    private static IEnumerable<(int variableIndex, int value)[]> GetHotOneOptions(
+        (int, int)[] first, List<(int abs, int sign)> scales)
+    {       
+        for (int i = 0; i < first.Length; i++)
+        {
+            var (absScale, sign) = scales[i];
+            if (absScale != 1) continue;
+            
+            // super nasty and depends on the array being immediately consumed by the iterating method
+            first[i].Item2 += sign;
+            yield return first;
+            first[i].Item2 -= sign;
+        }
+    } 
+
+    private IEnumerable<(int variableIndex, int value)[]> GetValidOptions(
+        List<(int abs, int sign)> scales, List<VariableType> ranges, (int, int)[] first, int varIndex, int sum)
+    {
+        var oldValue = first[varIndex];
+        
+        var (absScale, sign) = scales[varIndex];
+        var size = ranges[varIndex].Size + 1;
+        
+        if (varIndex == scales.Count - 1)
+        {
+            // note: sum is negative and increasing to 0
+            if (sum % absScale != 0)
+                yield break;
+            
+            var requiredSize = -sum / absScale;
+            if (requiredSize > size)
+                yield break;
+
+            first[varIndex].Item2 += sign * requiredSize;
+            yield return first;
+            first[varIndex] = oldValue;
+            yield break;
+        }
+
+        for (int i = 0; i < size; i++)
+        {
+            if (sum > 0)
+                break;
+
+            var results = GetValidOptions(scales, ranges, first, varIndex + 1, sum);
+
+            foreach (var result in results)
+                yield return result;
+
+            first[varIndex].Item2 += sign;
+            sum += absScale;
+        }
+
+        first[varIndex] = oldValue;
+    }
+
+    public bool IsValid(VariableCollection variables)
+    {
+        var range = expression.GetRange(variables);
+        return range.Contains(0);
+    }
+
+    public override string ToString()
+    {
+        return expression + " = 0";
     }
 }

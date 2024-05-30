@@ -4,5 +4,6 @@ public enum RestrictResult
 {
     NoChange,
     Change,
+    Complete,
     Infeasible,
 }

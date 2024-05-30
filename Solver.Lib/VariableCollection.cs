@@ -28,16 +28,42 @@ public sealed class VariableCollection : IReadOnlyList<VariableType>
 
     public int Count => _values.Count;
 
+    public double GetMin(int index, double scale) => this[index].GetMin(scale);
+    public double GetMin(KeyValuePair<int, double> indexAndScale) => GetMin(indexAndScale.Key, indexAndScale.Value);
+
+    public double GetMax(int index, double scale) => this[index].GetMax(scale);
+    public double GetMax(KeyValuePair<int, double> indexAndScale) => GetMax(indexAndScale.Key, indexAndScale.Value);
+    
+
     public void Add(VariableType item)
     {
         _values.Add(item);
     }
 
-    public void CopyFrom(VariableCollection source)
+    public void Add(int min, int max)
     {
-        _values.Clear();
-        _values.AddRange(source._values);
-        _modifiedIndices.Clear();
+        _values.Add(new VariableType(min, max));
+    }
+
+    public RestrictResult RestrictToMin(int index, int minValue)
+    {
+        return Variable.RestrictToMin(index, minValue, this);
+    }
+
+    public RestrictResult RestrictToMax(int index, int maxValue)
+    {
+        return Variable.RestrictToMax(index, maxValue, this);
+    }
+
+    public RestrictResult RestrictToRange(int index, int minValue, int maxValue)
+    {
+        var resultMin = Variable.RestrictToMin(index, minValue, this);
+        if (resultMin == RestrictResult.Infeasible)
+            return RestrictResult.Infeasible;
+        
+        var resultMax = Variable.RestrictToMax(index, maxValue, this);
+        
+        return resultMax == RestrictResult.NoChange ? resultMin : resultMax;
     }
 
     public IEnumerable<int> GetModifications()

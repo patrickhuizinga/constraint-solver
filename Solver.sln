@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Solver.Test", "Solver.Test\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Solver.Lib", "Solver.Lib\Solver.Lib.csproj", "{F9170E60-EC25-48DC-9796-6992349109CB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Solver.Gurobi", "Solver.Gurobi\Solver.Gurobi.csproj", "{529A1D68-E429-4416-B967-520761A8400D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Solver.Runner", "Solver.Runner\Solver.Runner.csproj", "{3AADAB0C-F942-47D6-86BE-4194C97DA8E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,13 @@ Global
 		{F9170E60-EC25-48DC-9796-6992349109CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9170E60-EC25-48DC-9796-6992349109CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9170E60-EC25-48DC-9796-6992349109CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{529A1D68-E429-4416-B967-520761A8400D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{529A1D68-E429-4416-B967-520761A8400D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{529A1D68-E429-4416-B967-520761A8400D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{529A1D68-E429-4416-B967-520761A8400D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AADAB0C-F942-47D6-86BE-4194C97DA8E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AADAB0C-F942-47D6-86BE-4194C97DA8E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AADAB0C-F942-47D6-86BE-4194C97DA8E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AADAB0C-F942-47D6-86BE-4194C97DA8E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

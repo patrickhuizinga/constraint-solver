@@ -28,6 +28,8 @@ public readonly record struct VariableType(int Min, int Max)
         return value == Max;
     }
 
+    public bool Contains(int value) => Min <= value && value <= Max;
+
     public int GetMin(int scale)
     {
         return scale > 0 ? scale * Min : scale * Max;
@@ -38,12 +40,12 @@ public readonly record struct VariableType(int Min, int Max)
         return scale > 0 ? scale * Min : scale * Max;
     }
 
-    public double GetMax(double scale)
+    public int GetMax(int scale)
     {
         return scale > 0 ? scale * Max : scale * Min;
     }
 
-    public int GetMax(int scale)
+    public double GetMax(double scale)
     {
         return scale > 0 ? scale * Max : scale * Min;
     }
@@ -53,7 +55,7 @@ public readonly record struct VariableType(int Min, int Max)
         if (Min == Max)
             return Min.ToString();
         
-        return $"[{Min}-{Max}]";
+        return $"[{Min}..{Max}]";
     }
 
     
@@ -83,6 +85,13 @@ public readonly record struct VariableType(int Min, int Max)
         return scale > 0
             ? new VariableType(scale * left.Min, scale * left.Max)
             : new VariableType(scale * left.Max, scale * left.Min);
+    }
+
+    public static VariableType operator *(int scale, VariableType right)
+    {
+        return scale > 0
+            ? new VariableType(scale * right.Min, scale * right.Max)
+            : new VariableType(scale * right.Max, scale * right.Min);
     }
 
 

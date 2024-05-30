@@ -13,11 +13,14 @@ public abstract class DoubleExpression :
     IMultiplicativeIdentity<DoubleExpression, DoubleExpression>,
     IMultiplyOperators<DoubleExpression, double, DoubleExpression>
 {
-    public static readonly DoubleExpression Zero = new SumDoubleExpression(0);
-    public static readonly DoubleExpression One = new SumDoubleExpression(1);
+    public static readonly DoubleExpression Zero = new SumDoubleExpression(0.0);
+    public static readonly DoubleExpression One = new SumDoubleExpression(1.0);
     public abstract double Constant { get; }
     
     public abstract double GetMin(VariableCollection variables);
+
+    public abstract double GetMax(VariableCollection variables);
+    public abstract double GetScale(int variableIndex);
 
     public abstract IEnumerable<int> GetVariableIndices();
     public abstract IEnumerable<KeyValuePair<int, double>> GetVariables();
@@ -104,7 +107,7 @@ public abstract class DoubleExpression :
 
     public static implicit operator DoubleExpression(Expression expression)
     {
-        return new SumDoubleExpression(expression, 1);
+        return new SumDoubleExpression(expression, 1.0);
     }
 
     public static implicit operator DoubleExpression(Variable variable)

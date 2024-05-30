@@ -4,14 +4,16 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Solver.Lib</AssemblyName>
-        <RootNamespace>Solver.Lib</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
       <Reference Include="gurobi110.netstandard20">
         <HintPath>..\..\..\..\..\Library\gurobi1100\macos_universal2\lib\gurobi110.netstandard20.dll</HintPath>
       </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Solver.Lib\Solver.Lib.csproj" />
     </ItemGroup>
 
 </Project>
